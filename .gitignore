@@ -1,0 +1,4 @@
+*.o
+/Puiss4/game
+/Src/client
+/Src/server
