@@ -1,6 +1,8 @@
 #ifndef Puiss4_h
 #define Puiss4_h
 
+//Maybe Refaire en plus clean
+
 #include <array>
 #include <bits/stdint-uintn.h>
 #include <iostream>
