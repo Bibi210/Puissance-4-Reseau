@@ -2,7 +2,8 @@
 #! MakeFile Are Ennemies
 CC := gcc
 CXX = g++
-CFLAGS := -Wall -Wextra -Wpedantic -g
+CFLAGS := -Wall -Wextra -Wpedantic -fanalyzer
+CXXFLAGS  := -Wall -Werror -Wextra -pedantic 
 EXE := server client
 
 all: $(EXE)
