@@ -36,11 +36,11 @@ public:
   void Abandon(Player who_gaveup);
   //*Coups possibles
 
-  string to_string();
+  string to_string(); //! Might Change
 
 private:
   // Grille de 6*7 cases;
-  array<Case, 42> Grid;
+  array<Case, (MAX_X*MAX_Y)> Grid;
 
   // Check if the Turn close the game and call end_game
   void Is_wining_turn(Player who_played, Case where);
