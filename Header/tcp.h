@@ -2,6 +2,9 @@
 #define _TCP_H
 
 #include <netinet/in.h>
+#include "../Header/util_func.h"
+#include <arpa/inet.h>
+#include <stdio.h>
 
 const char *str_of_sockaddr(const struct sockaddr *addr);
 

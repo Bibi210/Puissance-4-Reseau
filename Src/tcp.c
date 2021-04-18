@@ -1,7 +1,4 @@
 #include "../Header/tcp.h"
-#include "../Header/util_func.h"
-#include <arpa/inet.h>
-#include <stdio.h>
 
 char in6_addr_buf[INET6_ADDRSTRLEN];
 
