@@ -8,14 +8,15 @@ EXE := server client
 
 all: $(EXE)
 
-client: Src/util_func.o Src/tcp.o Src/tlv.o 
-server: Src/util_func.o Src/tcp.o Src/tlv.o 
+client: Libs/Src/util_func.o Libs/Src/tcp.o Libs/Src/tlv.o Puiss4/game.o
+server: Libs/Src/util_func.o Libs/Src/tcp.o Libs/Src/tlv.o Puiss4/game.o
 
-util_func.o: Header/util_func.h
-tcp.o: Header/tcp.h
-tlv.o: Header/util_func.h Header/tlv.hpp
+util_func.o: Libs/util_func.h
+tcp.o: Libs/tcp.h
+tlv.o: Libs/util_func.h Libs/tlv.hpp
+game.o: Puiss4/game.hpp
 
 clean:
-	$(RM) $(EXE) *~ Src/*.o
+	$(RM) $(EXE) *~ $(shell find . -name "*.o")
 
 .PHONY: all clean
