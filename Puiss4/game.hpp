@@ -39,6 +39,7 @@ public:
   //*Coups possibles
 
   string to_string(); //! Might Change
+  static string for_client(array<Case,(MAX_X*MAX_Y)>);
 
 private:
   // Grille de 6*7 cases;

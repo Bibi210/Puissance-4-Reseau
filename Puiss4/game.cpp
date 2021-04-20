@@ -101,3 +101,28 @@ string Puiss4::to_string() {
   return output;
 }
 
+string Puiss4::for_client(array<Case, (7 * 6)> client_grid){
+  string output = string();
+  for (int lin = MAX_Y - 1; lin >= 0; lin--) {
+    for (int col = 0; col < MAX_X; col++) {
+      Case In_process = col * (MAX_X - 1) + lin;
+      output.append("[");
+      
+      switch (client_grid[In_process]) {
+      case player_A:
+        output.push_back('X');
+        break;
+      case player_B:
+        output.push_back('O');
+        break;
+      default:
+        output.push_back(' ');
+        break;
+      }
+      
+      output.append("]");
+    }
+    output.push_back('\n');
+  }
+  return output;
+}

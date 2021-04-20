@@ -11,12 +11,13 @@ all: $(EXE)
 client: Libs/Src/util_func.o Libs/Src/tcp.o Libs/Src/tlv.o Puiss4/game.o
 server: Libs/Src/util_func.o Libs/Src/tcp.o Libs/Src/tlv.o Puiss4/game.o
 
+
 util_func.o: Libs/util_func.h
 tcp.o: Libs/tcp.h
 tlv.o: Libs/util_func.h Libs/tlv.hpp
 game.o: Puiss4/game.hpp
 
 clean:
-	$(RM) $(EXE) *~ $(shell find . -name "*.o")
+	$(RM) $(EXE) *~ $(shell find . -name "*.o") *.txt
 
 .PHONY: all clean

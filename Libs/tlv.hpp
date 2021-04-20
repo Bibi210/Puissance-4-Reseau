@@ -1,6 +1,8 @@
 #ifndef TLV_PROGET_H
 #define TLV_PROGET_H
 
+#include <array>
+#include <bits/stdint-uintn.h>
 extern "C" {
 #include "util_func.h"
 #include <assert.h>
@@ -8,6 +10,8 @@ extern "C" {
 #include <stdio.h>
 #include <string.h>
 }
+#include <iostream>
+using namespace std;
 
 #define STATE_SIZE 2
 #define GRID_SIZE (6 * 7)
@@ -34,10 +38,13 @@ enum TLV_len : uint8_t {
   LEN_DISCON = LEN_INFO_MSG,
 };
 
+typedef uint8_t* Body; //! Need Free
 typedef struct Generic_tlv_t {
+  
+
   uint8_t type;
   uint8_t length;
-  uint8_t *msg;
+  Body msg;
 } Generic_tlv_t;
 
 /// Envoie un TLV sur fdout
@@ -49,8 +56,8 @@ int read_tlv(Generic_tlv_t *to_read_into, int fdin);
 /// Lis un tlv de fdin et l'envoie sur fdout *bloquant*
 int retransmit_tlv(int fdin, int fdout);
 
-///Destroy TLV (free)
-void destroy_tlv(Generic_tlv_t* to_destroy);
+/// Destroy TLV (free)
+void destroy_tlv(Generic_tlv_t *to_destroy);
 
 //! Only for debug purposes
 void display_TLV_msg(Generic_tlv_t);
@@ -69,7 +76,40 @@ int SEND_MOVE(uint8_t CDL, int fdout);
 int SEND_MOVEACK(uint8_t CDL, uint8_t Ok, int fdout);
 int SEND_CONCEDE(int fdout);
 int SEND_DISCON(int fdout);
-//! SENDING_FUNCS Alloc for msg need a free
+//! SENDING_FUNCS Alloc for msg free in send_tlv
+
+typedef struct Pseudo {
+  uint8_t Size;
+  string Nickname;
+} Pseudo_t;
+
+typedef struct Start {
+  uint8_t Pcolor;
+  Pseudo_t Client;
+  Pseudo_t Opponent;
+} Start_t;
+
+typedef struct Grid {
+  uint8_t won_draw;
+  uint8_t who;
+  array<uint8_t, GRID_SIZE> Grid;
+} Grid_t;
+
+typedef uint8_t Move_t;
+
+typedef struct Moveack{
+  Move_t Col;
+  bool Accepted;
+}Moveack_t;
+
+
+//! READING_FUNCS Need a destroy call on to_read by Yourself
+Pseudo_t READ_PSEUDO(Body To_read);
+Start_t READ_START(Body To_read);
+Grid_t READ_GRID(Body To_read);
+Move_t READ_MOVE(Body To_read);
+Moveack_t READ_MOVEACK(Body To_read);
+
 
 //! Util_func To test and make cleanner
 void add_pseudo(uint8_t Plen, const char *pseudo, uint8_t *msg);
