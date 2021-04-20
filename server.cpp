@@ -17,16 +17,14 @@ int main(int argc, char **argv)
 
     const in_port_t port = atoi(argv[1]);
 
-    int rc;
-
     int sockfd = install_server(port);
-    ERROR_HANDLER("install_server()", sockfd);
+    ERROR_SHUTDOWN("install_server()", sockfd);
 
     printf("Listening on port %d\n", port);
 
     sockfd = serverCore(sockfd);
 
-    ERROR_HANDLER("close(sockfd)", close(sockfd));
+    ERROR_SHUTDOWN("close(sockfd)", close(sockfd));
 
     return EXIT_SUCCESS;
 }
