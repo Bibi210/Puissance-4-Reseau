@@ -5,8 +5,8 @@
 #include <sys/types.h>
 #include <wait.h>
 #include "tcp.h"
-#include "../Header/server_func.h"
-#include "../Header/util_func.h"
+#include "../Libs/server_func.h"
+#include "../Libs/util_func.h"
 
 int serverCore(int sockfd)
 {

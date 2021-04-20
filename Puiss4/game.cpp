@@ -1,8 +1,7 @@
 #include "game.hpp"
-#include <string>
 
 bool Puiss4::Turn(Player who_played, Col col_where) {
-  if (col_where < 0 && col_where > MAX_X)
+  if (col_where > MAX_X)
     return false;
   if (who_played != player_A && player_B != who_played)
     return false;
@@ -68,7 +67,7 @@ void Puiss4::end_game(Player winner) {
 }
 
 bool Puiss4::Is_valid_case(int case_nb) {
-  return case_nb > 0 && case_nb < Grid.size();
+  return case_nb > 0 && case_nb < (uint8_t)Grid.size();
 }
 
 Puiss4::Puiss4() {
@@ -85,10 +84,10 @@ string Puiss4::to_string() {
       
       switch (Grid[In_process]) {
       case player_A:
-        output.push_back('0');
+        output.push_back('X');
         break;
       case player_B:
-        output.push_back('1');
+        output.push_back('O');
         break;
       default:
         output.push_back(' ');
@@ -102,14 +101,3 @@ string Puiss4::to_string() {
   return output;
 }
 
-int main(int argc, const char **argv) {
-  Puiss4 tst;
-  tst.Turn(1, 2);
-  tst.Turn(1, 3);
-  tst.Turn(1, 4);
-  tst.Turn(1, 5);
-  cout << boolalpha << tst.to_string() << endl;
-  cout << tst.In_game << endl;
-
-  return 0;
-}

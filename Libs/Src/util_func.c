@@ -1,4 +1,4 @@
-#include "../Header/util_func.h"
+#include "../util_func.h"
 
 int write_all(int dst, void *buffer, size_t size) {
   int write_result;
@@ -40,7 +40,7 @@ int read_all(int src, void *buffer, size_t size) {
   return readed;
 }
 
-int error_gestion(char *msg, int to_test, char *file, int line, int mode) {
+int error_gestion(const char *msg, int to_test,const char *file, int line, int mode) {
   int output = 0;
   if (to_test < 0) {
     fprintf(stderr, "%s error %s L:%d ", msg, file, line);

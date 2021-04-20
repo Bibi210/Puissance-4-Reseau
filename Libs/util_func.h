@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-int error_gestion(char *msg, int to_test, char *file, int line, int mode);
+int error_gestion(const char *msg, int to_test,const char *file,int line, int mode);
 #define ERROR_SHUTDOWN(msg, to_test)                                           \
   error_gestion(msg, to_test, __FILE__, __LINE__, -1)
 #define ERROR_HANDLER(msg, to_test)                                            \

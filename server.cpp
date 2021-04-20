@@ -1,8 +1,8 @@
 extern "C"{
-    #include "Header/tcp.h"
-    #include "Header/server_func.h"
+    #include "Libs/tcp.h"
+    #include "Libs/server_func.h"
 }
-#include "Header/tlv.hpp"
+#include "Libs/tlv.hpp"
 #include <iostream>
 
 using namespace std;

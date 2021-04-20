@@ -2,7 +2,7 @@
 #define _TCP_H
 
 #include <netinet/in.h>
-#include "../Header/util_func.h"
+#include "util_func.h"
 #include <arpa/inet.h>
 #include <stdio.h>
 

@@ -1,4 +1,4 @@
-#include "../Header/tlv.hpp"
+#include "../tlv.hpp"
 
 int send_tlv(Generic_tlv_t* to_send, int fdout) {
   int error = 0;
@@ -59,7 +59,8 @@ int retransmit_tlv(int fdin, int fdout){
   return EXIT_SUCCESS;
 }
 
-void add_pseudo(uint8_t Plen,char* pseudo,uint8_t* msg){
+void add_pseudo(uint8_t Plen,const char* pseudo,uint8_t* msg){
+  if(Plen > 64) Plen = 64;
   msg[0] = Plen;
   for (size_t i = 0; i < Plen; i++)
   {
@@ -80,7 +81,7 @@ int pre_init_msg(uint8_t Type, uint8_t Len, Generic_tlv_t *to_init){
   return EXIT_SUCCESS;
 }
 
-int SEND_PSEUDO(uint8_t Plen,char* pseudo,int fdout){
+int SEND_PSEUDO(uint8_t Plen,const char* pseudo,int fdout){
   Generic_tlv_t to_send;
   
   if (pre_init_msg(TYPE_PSEUDO,LEN_PSEUDO,&to_send) < 0) 
@@ -89,7 +90,7 @@ int SEND_PSEUDO(uint8_t Plen,char* pseudo,int fdout){
   return send_tlv(&to_send, fdout);
 }
 
-int SEND_START(uint8_t Pcolor, uint8_t Plen_A, char *pseudo_A, uint8_t Plen_B, char *pseudo_B,int fdout){
+int SEND_START(uint8_t Pcolor, uint8_t Plen_A,const char *pseudo_A, uint8_t Plen_B,const char *pseudo_B,int fdout){
   Generic_tlv_t to_send;
   if (pre_init_msg(TYPE_START,LEN_START,&to_send) < 0) 
     return -1;
@@ -151,5 +152,10 @@ int SEND_DISCON(int fdout){
   return send_tlv(&to_send, fdout);
 }
 
+void destroy_tlv(Generic_tlv_t* to_destroy){
+  if (to_destroy->length){
+    free(to_destroy->msg);
+  }
+}
 
 
