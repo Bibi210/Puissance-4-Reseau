@@ -68,9 +68,10 @@ int retransmit_tlv(int fdin, int fdout) {
 void add_pseudo(uint8_t Plen, const char *pseudo, uint8_t *msg) {
   if (Plen > 64)
     Plen = 64;
+
   msg[0] = Plen;
   for (size_t i = 0; i < Plen; i++) {
-    msg[i + 1] = pseudo[i];
+    msg[i + 1] = (uint8_t)pseudo[i];
   }
   return;
 }
@@ -88,6 +89,9 @@ int pre_init_msg(uint8_t Type, uint8_t Len, Generic_tlv_t *to_init) {
   return EXIT_SUCCESS;
 }
 
+int SEND_PSEUDO(Pseudo_t to_send, int fdout) {
+  return SEND_PSEUDO(to_send.Size, to_send.Nickname.c_str(), fdout);
+}
 int SEND_PSEUDO(uint8_t Plen, const char *pseudo, int fdout) {
   Generic_tlv_t to_send;
 
@@ -95,6 +99,13 @@ int SEND_PSEUDO(uint8_t Plen, const char *pseudo, int fdout) {
     return -1;
   add_pseudo(Plen, pseudo, to_send.msg);
   return send_tlv(&to_send, fdout);
+}
+
+int SEND_START(Start_t to_send, int fdout) {
+  Pseudo_t Ally = to_send.Client;
+  Pseudo_t Ennemy = to_send.Opponent;
+  return SEND_START(to_send.Pcolor, Ally.Size, Ally.Nickname.c_str(),
+                    Ennemy.Size, Ennemy.Nickname.c_str(), fdout);
 }
 
 int SEND_START(uint8_t Pcolor, uint8_t Plen_A, const char *pseudo_A,
@@ -108,6 +119,17 @@ int SEND_START(uint8_t Pcolor, uint8_t Plen_A, const char *pseudo_A,
   add_pseudo(Plen_B, pseudo_B, to_send.msg + 1 + 1 + 64);
 
   return send_tlv(&to_send, fdout);
+}
+
+int SEND_GRID(Grid_t to_send, int fdout){
+  uint8_t State[2];
+  State[0] = to_send.won_draw;
+  State[1] = to_send.who;
+  uint8_t Grid[GRID_SIZE];
+  for(int i = 0; i < GRID_SIZE; i++){
+    Grid[i] = to_send.Grid[i];
+  }
+  return SEND_GRID(State,Grid,fdout);
 }
 
 int SEND_GRID(uint8_t *State, uint8_t *Grid, int fdout) {
@@ -131,6 +153,11 @@ int SEND_MOVE(uint8_t CDL, int fdout) {
 
   to_send.msg[0] = CDL;
   return send_tlv(&to_send, fdout);
+}
+
+
+int SEND_MOVEACK(Moveack_t to_send,int fdout) {
+  return SEND_MOVEACK(to_send.Col,to_send.Accepted,fdout);
 }
 
 int SEND_MOVEACK(uint8_t CDL, uint8_t Ok, int fdout) {
@@ -163,7 +190,10 @@ Pseudo_t READ_PSEUDO(Body To_read) {
   //! Check if Nickname Survives
   Pseudo_t output;
   output.Size = To_read[0];
-  output.Nickname = string(To_read[1], output.Size);
+  for (size_t i = 1; i <= output.Size; i++) {
+    output.Nickname.push_back(To_read[i]);
+  }
+
   return output;
 }
 
@@ -178,7 +208,8 @@ Start_t READ_START(Body To_read) {
 Grid_t READ_GRID(Body To_read) {
   Grid_t output;
   output.won_draw = To_read[0];
-  for (int i = 0; i < LEN_GRID - 2; i++) {
+  output.who = To_read[1];
+  for (int i = 0; i < LEN_GRID; i++) {
     output.Grid[i] = To_read[i + 2];
   }
   return output;
@@ -214,14 +245,16 @@ void display_TLV_msg(Generic_tlv_t to_see) {
     Grid_t To_test = READ_GRID(to_see.msg);
     cout << "TYPE_GRID" << endl;
     cout << "Won : " << +To_test.won_draw << endl;
-    cout << "Who :" << +To_test.who << endl;
-    cout << "Grid" << endl;
+    cout << "Who : " << +To_test.who << endl;
+    cout << "Grid :" << endl;
+    cout << Puiss4::for_client(To_test.Grid) << endl;
     break;
   }
   case TYPE_MOVEACK: {
     Moveack_t to_test = READ_MOVEACK(to_see.msg);
     cout << "TYPE_MOVEACK" << endl;
-    cout << "Accepted ? " << +to_test.Accepted << endl;
+    cout << boolalpha;
+    cout << "Accepted ? " << to_test.Accepted << endl;
     cout << "Col : " << +to_test.Col << endl;
     break;
   }

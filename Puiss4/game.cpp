@@ -81,7 +81,7 @@ string Puiss4::to_string() {
     for (int col = 0; col < MAX_X; col++) {
       Case In_process = col * (MAX_X - 1) + lin;
       output.append("[");
-      
+
       switch (Grid[In_process]) {
       case player_A:
         output.push_back('X');
@@ -89,11 +89,14 @@ string Puiss4::to_string() {
       case player_B:
         output.push_back('O');
         break;
-      default:
+      case NONE_CASE:
         output.push_back(' ');
         break;
+      default:
+        output.push_back('E');
+        break;
       }
-      
+
       output.append("]");
     }
     output.push_back('\n');
@@ -101,13 +104,13 @@ string Puiss4::to_string() {
   return output;
 }
 
-string Puiss4::for_client(array<Case, (7 * 6)> client_grid){
+string Puiss4::for_client(array<Case, (7 * 6)> client_grid) {
   string output = string();
   for (int lin = MAX_Y - 1; lin >= 0; lin--) {
     for (int col = 0; col < MAX_X; col++) {
       Case In_process = col * (MAX_X - 1) + lin;
       output.append("[");
-      
+
       switch (client_grid[In_process]) {
       case player_A:
         output.push_back('X');
@@ -115,11 +118,13 @@ string Puiss4::for_client(array<Case, (7 * 6)> client_grid){
       case player_B:
         output.push_back('O');
         break;
-      default:
+     case NONE_CASE:
         output.push_back(' ');
         break;
+      default:
+        output.push_back('E');
+        break;
       }
-      
       output.append("]");
     }
     output.push_back('\n');
