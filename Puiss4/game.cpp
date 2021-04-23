@@ -61,7 +61,7 @@ void Puiss4::Is_wining_turn(Player who_played, Case where) {
 }
 
 void Puiss4::end_game(Player winner) {
-  In_game = false;
+  In_game = WIN;
   this->winner = winner;
   return;
 }
@@ -71,7 +71,7 @@ bool Puiss4::Is_valid_case(int case_nb) {
 }
 
 Puiss4::Puiss4() {
-  In_game = true;
+  In_game = RUNNING;
   Grid.fill(NONE_CASE);
 }
 
@@ -81,7 +81,7 @@ string Puiss4::to_string() {
     for (int col = 0; col < MAX_X; col++) {
       Case In_process = col * (MAX_X - 1) + lin;
       output.append("[");
-      
+
       switch (Grid[In_process]) {
       case player_A:
         output.push_back('X');
@@ -89,11 +89,14 @@ string Puiss4::to_string() {
       case player_B:
         output.push_back('O');
         break;
-      default:
+      case NONE_CASE:
         output.push_back(' ');
         break;
+      default:
+        output.push_back('E');
+        break;
       }
-      
+
       output.append("]");
     }
     output.push_back('\n');
@@ -101,3 +104,30 @@ string Puiss4::to_string() {
   return output;
 }
 
+string Puiss4::for_client(array<Case, (7 * 6)> client_grid) {
+  string output = string();
+  for (int lin = MAX_Y - 1; lin >= 0; lin--) {
+    for (int col = 0; col < MAX_X; col++) {
+      Case In_process = col * (MAX_X - 1) + lin;
+      output.append("[");
+
+      switch (client_grid[In_process]) {
+      case player_A:
+        output.push_back('X');
+        break;
+      case player_B:
+        output.push_back('O');
+        break;
+     case NONE_CASE:
+        output.push_back(' ');
+        break;
+      default:
+        output.push_back('E');
+        break;
+      }
+      output.append("]");
+    }
+    output.push_back('\n');
+  }
+  return output;
+}

@@ -15,6 +15,12 @@
 
 using namespace std;
 
+typedef enum Game_state {
+  DRAW,
+  RUNNING,
+  WIN,
+}Game_state;
+
 class Puiss4 {
   typedef uint8_t Player;
   typedef uint8_t Case;
@@ -24,10 +30,12 @@ public:
   static const Player player_A = 0;
   static const Player player_B = 1;
 
+  // Grille de 6*7 cases;
+  array<Case, (MAX_X*MAX_Y)> Grid;
   Puiss4();
 
   // Toujours en jeu ?
-  bool In_game;
+  int In_game;
   Player winner;
 
   //*Coups possibles
@@ -39,11 +47,9 @@ public:
   //*Coups possibles
 
   string to_string(); //! Might Change
+  static string for_client(array<Case,(MAX_X*MAX_Y)>);
 
 private:
-  // Grille de 6*7 cases;
-  array<Case, (MAX_X*MAX_Y)> Grid;
-
   // Check if the Turn close the game and call end_game
   void Is_wining_turn(Player who_played, Case where);
 
