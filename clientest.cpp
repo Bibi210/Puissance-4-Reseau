@@ -28,5 +28,7 @@ int main() {
   sleep(1);
   ERROR_SHUTDOWN("Read", read_tlv(&to_read_into, tunnel[0]));
 
+  destroy_tlv(&to_read_into);
+
   return 0;
 }
