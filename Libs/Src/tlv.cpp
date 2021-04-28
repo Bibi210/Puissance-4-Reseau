@@ -261,7 +261,7 @@ void display_TLV_msg(Generic_tlv_t to_see) {
   case TYPE_MOVE: {
     Move_t To_test = READ_MOVE(to_see.msg);
     cout << "TYPE_MOVE" << endl;
-    cout << "Col : " << To_test << endl;
+    cout << "Col : " << +To_test << endl;
     break;
   }
   case TYPE_PSEUDO: {
