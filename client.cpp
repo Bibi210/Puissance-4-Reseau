@@ -12,13 +12,16 @@ string Pseudo;
 string OPpseudo;
 uint8_t Color;
 
-// TODO All these functions
-
-int make_move_send(){
-  return 0;
+int make_move_send(int serv_fd) {
+  // TODO Take the grid and test if move valid
+  Move_t to_send;
+  cout << endl;
+  cout << "Choisisez une colone : " << endl;
+  cin >> to_send;
+  return SEND_MOVE(to_send, serv_fd);
 }
 
-void process_tlv(Generic_tlv_t *in_process) {
+void process_tlv(Generic_tlv_t *in_process, int serv_fd) {
   switch (in_process->type) {
   case TYPE_START: {
     Start_t Received = READ_START(in_process->msg);
@@ -28,19 +31,28 @@ void process_tlv(Generic_tlv_t *in_process) {
   } break;
 
   case TYPE_MOVEACK: {
+    int error = 0;
     Moveack_t Received = READ_MOVEACK(in_process->msg);
-    if (!Received.Accepted)make_move_send();
+    if (!Received.Accepted) {
+      error = make_move_send(serv_fd);
+      ERROR_SHUTDOWN("SEND MOVE ", error);
+    }
+
   } break;
 
   case TYPE_GRID: {
+    int error = 0;
     Grid_t Received = READ_GRID(in_process->msg);
     cout << Puiss4::for_client(Received.Grid) << endl;
     switch (Received.won_draw) {
     case 0:
-      if (Received.who == Color)make_move_send();
+      if (Received.who == Color) {
+        error = make_move_send(serv_fd);
+        ERROR_SHUTDOWN("SEND MOVE ", error);
+      }
       break;
     case 1:
-      cout << "Player :" << Received.who << " Won" << endl;
+      cout << "Player :" << +Received.who << " Won" << endl;
       exit(EXIT_SUCCESS);
     case 2:
       cout << "Draw " << endl;
@@ -79,7 +91,11 @@ int game(int serv_fd, const char *pseudo) {
   if (error < 0)
     return error;
 
-  // TODO Loop on process_tlv
+  while (1) {
+    read_tlv(&in_process, serv_fd);
+    cout << "Tlv Reçu " << endl;
+    process_tlv(&in_process, serv_fd);
+  }
   return EXIT_SUCCESS;
 }
 
