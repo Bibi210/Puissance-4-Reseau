@@ -4,7 +4,6 @@
 #include "../Puiss4/p4.hpp"
 #include "tlv.hpp"
 
-
 extern "C" {
 #include "util_func.h"
 #include <unistd.h>
@@ -27,12 +26,16 @@ typedef enum Validity {
   ACCEPTED,
 } Validity_t;
 
+typedef struct Player_init {
+  int fd;
+  int color;
+} Player_init_t;
+
 
 int serverCore(int sockfd);
 
 int childWork(int *fds);
-int moveProcess(Generic_tlv_t *tlv, int *fds, Puissance4_t *game);
-int moveProcessAux(Move_t move, int state, int *fds, Puissance4_t *game);
 int process_tlv(Generic_tlv_t *tlv, int *fds, Puissance4_t *game);
+int moveProcess(Generic_tlv_t *tlv, int *fds, Puissance4_t *game);
 
 #endif // _SERFUNC_H included.

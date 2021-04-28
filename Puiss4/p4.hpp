@@ -34,8 +34,6 @@ typedef struct Puissance4
     int turn;
 } Puissance4_t;
 
-void gameEngine();
-
 void gameInit(Puissance4_t *game);
 void gameShow(Puissance4_t *game);
 

@@ -65,7 +65,10 @@ int childWork(int *fds) {
   grid.won_draw = 0;
   grid.Grid = game.grid;
 
+  srand(getpid());
   int color = rand() % 2;
+
+  int first_player;
 
   for (size_t i = 0; i < CONNEXIONS_LIMIT; i++) {
     start[i].Client = pseudo[i];
@@ -84,7 +87,18 @@ int childWork(int *fds) {
       return -1;
     }
 
+    if (color == ROUGE) {
+      first_player = i;
+    }
+
     color = (color + 1) % 2; // switch player si color = 0 -> 1 / = 1 -> 0
+  }
+
+  if (first_player != 0) {
+    // Reverse fds
+    int temp = fds[0];
+    fds[0] = fds[1];
+    fds[1] = temp;
   }
 
   while (1) {
@@ -111,6 +125,7 @@ int childWork(int *fds) {
 
 int process_tlv(Generic_tlv_t *tlv, int *fds, Puissance4_t *game) {
   int rc;
+
 
   switch (tlv->type) {
   case TYPE_MOVE: {
@@ -169,21 +184,9 @@ int moveProcess(Generic_tlv_t *tlv, int *fds, Puissance4_t *game) {
 
   Move_t move = READ_MOVE(tlv->msg);
 
+  cout << +move << endl;
+
   int state = gameTurn(game, move);
-
-  rc = moveProcessAux(move, state, fds, game);
-  if (rc < 0) {
-    ERROR_HANDLER(
-        "moveProcessAux(move, NOT_ACCEPTED, game->player, state, fds, game)",
-        rc);
-    return -1;
-  }
-
-  return 0;
-}
-
-int moveProcessAux(Move_t move, int state, int *fds, Puissance4_t *game) {
-  int rc = 0;
 
   uint8_t who_to_send = game->player;
   Validity_t move_accepted = ACCEPTED;
@@ -191,7 +194,8 @@ int moveProcessAux(Move_t move, int state, int *fds, Puissance4_t *game) {
   if (state == RUNNING) {
     uint8_t player = (game->player + 1) % 2;
     who_to_send = player;
-  } else {
+  }
+  if (state == -1) {
     move_accepted = NOT_ACCEPTED;
   }
 
@@ -229,5 +233,6 @@ int moveProcessAux(Move_t move, int state, int *fds, Puissance4_t *game) {
       return -1;
     }
   }
-  return EXIT_SUCCESS;
+
+  return 0;
 }

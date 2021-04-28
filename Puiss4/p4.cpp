@@ -1,5 +1,9 @@
 #include "p4.hpp"
 
+#include <iostream>
+
+using namespace std;
+
 void gameInit(Puissance4_t *game) {
     for (int lin = LIN_MAX - 1; lin != -1; lin--) {
         for (int col = 0; col != COL_MAX; col++) {
@@ -88,17 +92,6 @@ int gameTurn(Puissance4_t *game, int col) {
     }
 
     return state;
-}
-
-void gameEngine(Puissance4_t *game) {
-    gameInit(game);
-
-    gameShow(game);
-
-    if (game->player == ROUGE)
-        printf("Player Cross won!\n");
-    else
-        printf("Player Circle won!\n");
 }
 
 int testValidity(int col, Puissance4_t *game) {

@@ -215,7 +215,10 @@ Grid_t READ_GRID(Body To_read) {
   return output;
 }
 
-Move_t READ_MOVE(Body To_read) { return To_read[0]; }
+Move_t READ_MOVE(Body To_read) {
+  Move_t output = To_read[0];
+  return output; 
+}
 
 Moveack_t READ_MOVEACK(Body To_read) {
   Moveack output;
