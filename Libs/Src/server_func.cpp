@@ -107,7 +107,7 @@ int childWork(int *fds) {
       ERROR_HANDLER("read_tlv(tlv, fds[game.player])", rc);
       return -1;
     }
-
+    
     // Decrypte tlv
     rc = process_tlv(&tlv, fds, &game);
     if (rc < 0) {
