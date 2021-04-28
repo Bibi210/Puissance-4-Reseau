@@ -23,8 +23,8 @@ int main(int argc, char **argv)
     printf("Listening on port %d\n", port);
 
     sockfd = serverCore(sockfd);
-
+    
     ERROR_SHUTDOWN("close(sockfd)", close(sockfd));
-
+    
     return EXIT_SUCCESS;
 }

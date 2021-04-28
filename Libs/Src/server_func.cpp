@@ -1,5 +1,5 @@
 #include "../server_func.hpp"
-#include "../../Puiss4/game.hpp"
+#include "../../Puiss4/p4.hpp"
 #include "../tcp.h"
 #include "../tlv.hpp"
 #include "../util_func.h"
@@ -11,8 +11,6 @@
 #include <wait.h>
 
 // A faire :
-// - Refaire le jeu
-// - Mettre sous fonction partis réfactorable
 // - Corriger potentiel bug
 
 int serverCore(int sockfd) {
@@ -35,19 +33,20 @@ int serverCore(int sockfd) {
     pid = fork();
     if (pid < 0) {
       ERROR_HANDLER("fork()", pid);
-      ERROR_HANDLER("closeFds(fds)", closeFds(fds));
-    } else if (pid == 0) {
-      childWork(fds); // Manage connexions
-      ERROR_HANDLER("closeFds(fds)", closeFds(fds));
+      ERROR_HANDLER("closeFds(fds)", closeFds(fds, CONNEXIONS_LIMIT));
+    }
+    else if (pid == 0) {
+      ERROR_SHUTDOWN("childWork(fds)", childWork(fds)); // Manage connexions
+
+      ERROR_SHUTDOWN("closeFds(fds)", closeFds(fds, CONNEXIONS_LIMIT));
 
       exit(0);
     }
 
     // Parent
-    ERROR_HANDLER("closeFds(fds)", closeFds(fds));
+    ERROR_HANDLER("closeFds(fds)", closeFds(fds, CONNEXIONS_LIMIT));
 
     while (1) {
-      // Handle connexion
       pid = waitpid(-1, NULL, WNOHANG);
       ERROR_HANDLER("waitpid(-1, NULL, WNOHANG)", pid);
     }
@@ -56,46 +55,32 @@ int serverCore(int sockfd) {
   return sockfd;
 }
 
-// Bouger dans utils
-int closeFds(int *fds) {
-  int rc;
-  int failure = 0;
-
-  for (int i = 0; i < CONNEXIONS_LIMIT; i++) {
-    rc = close(fds[i]);
-    if (rc < 0) {
-      failure = 1;
-      ERROR_HANDLER("close(fd)", rc);
-    }
-  }
-
-  if (failure) {
-    return -1;
-  }
-
-  return 0;
-}
-
 int childWork(int *fds) {
   int rc;
   size_t i;
+
   Pseudo_t pseudo[2];
   Start_t start[2];
 
   Generic_tlv_t *tlv;
 
   for (i = 0; i < CONNEXIONS_LIMIT; i++) {
-    rc = read_tlv(tlv, fds[i]);
-    ERROR_SHUTDOWN("read_tlv(tlv, fds[i])", rc);
+    rc = read_tlv(tlv, fds[i]); // Read tlv
+    if (rc < 0) {
+      ERROR_HANDLER("read_tlv(tlv, fds[i])", rc);
+      return -1;
+    }
 
     pseudo[i] = READ_PSEUDO(tlv->msg);
   }
 
-  Puiss4 *game = new Puiss4();
+  Puissance4_t game;
+  gameInit(&game);
+
   Grid_t grid;
-  grid.who = ROUGE;
+  grid.who = game.player;
   grid.won_draw = 0;
-  grid.Grid = game->Grid;
+  grid.Grid = game.grid;
 
   int color = rand() % 2;
 
@@ -103,97 +88,161 @@ int childWork(int *fds) {
     start[i].Client = pseudo[i];
     start[i].Opponent = pseudo[(i + 1) % 2];
     start[i].Pcolor = color;
-    if (color == ROUGE) {
-      ERROR_SHUTDOWN("SEND_GRID(grid, fds[i])", SEND_GRID(grid, fds[i]));
+
+    rc = SEND_START(start[i], fds[i]);
+    if (rc < 0) {
+      ERROR_HANDLER("SEND_START(start[i], fds[i])", rc);
+      return -1;
     }
-    ERROR_SHUTDOWN("SEND_START(start[i], fds[i])",
-                   SEND_START(start[i], fds[i]));
+
+    rc = SEND_GRID(grid, fds[i]);
+    if (rc < 0) {
+      ERROR_HANDLER("SEND_GRID(grid, fds[i])", rc);
+      return -1;
+    }
+
+    color = (color + 1) % 2; // switch player si color = 0 -> 1 / = 1 -> 0
   }
 
-  color = ROUGE;
-
   while (1) {
-    rc = read_tlv(tlv, fds[color]);
-    ERROR_SHUTDOWN("read_tlv(tlv, fds[color])", rc);
+    rc = read_tlv(tlv, fds[game.player]);
+    if (rc < 0) {
+      ERROR_HANDLER("read_tlv(tlv, fds[game.player])", rc);
+      return -1;
+    }
 
     // Decrypte tlv
-    process_tlv(tlv, fds, color, game);
+    rc = process_tlv(tlv, fds, &game);
+    if (rc < 0) {
+      ERROR_HANDLER("process_tlv(tlv, fds, &game)", rc);
+      return -1;
+    }
 
-    // Renvoie tlv approprié
-    color = (color + 1) % 2; // switch player si color = 0 -> 1 / = 1 -> 0
+    if (rc == 1) { // Partie fini
+      break;
+    }
   }
 
   exit(0);
 }
 
-void process_tlv(Generic_tlv_t *tlv, int *fds, int color, Puiss4 *game) {
+int process_tlv(Generic_tlv_t *tlv, int *fds, Puissance4_t *game) {
+  int rc;
+
   switch (tlv->type) {
   case TYPE_MOVE: {
-    Move_t move = READ_MOVE(tlv->msg);
-    if (game->Turn(move, color)) {
-      ERROR_SHUTDOWN("SEND_MOVE(move, fds[i])",
-                     SEND_MOVE(move, fds[(color + 1) % 2]));
-    } else if (game->In_game == WIN) {
-      // Gagant
-      Moveack_t moveack;
-      moveack.Accepted = 1;
-      moveack.Col = move;
-
-      Grid_t grid;
-      grid.Grid = game->Grid;
-      grid.who = color;
-      grid.won_draw = WIN;
-
-      ERROR_SHUTDOWN("SEND_MOVE(move, fds[i])",
-                     SEND_MOVEACK(moveack, fds[color]));
-      ERROR_SHUTDOWN("SEND_MOVE(move, fds[i])", SEND_GRID(grid, fds[color]));
-    } else if (game->In_game == DRAW) {
-      // Draw
-      Moveack_t moveack;
-      moveack.Accepted = 1;
-      moveack.Col = move;
-
-      Grid_t grid;
-      grid.Grid = game->Grid;
-      grid.who = color;
-      grid.won_draw = DRAW;
-
-      ERROR_SHUTDOWN("SEND_MOVE(move, fds[i])",
-                     SEND_MOVEACK(moveack, fds[color]));
-      ERROR_SHUTDOWN("SEND_MOVE(move, fds[i])", SEND_GRID(grid, fds[color]));
-    } else {
-      Moveack_t moveack;
-      moveack.Accepted = 0;
-      moveack.Col = move;
-
-      Grid_t grid;
-      grid.Grid = game->Grid;
-      grid.who = color;
-      grid.won_draw = RUNNING;
-
-      ERROR_SHUTDOWN("SEND_MOVE(move, fds[i])",
-                     SEND_MOVEACK(moveack, fds[color]));
-      ERROR_SHUTDOWN("SEND_MOVE(move, fds[i])", SEND_GRID(grid, fds[color]));
+    rc = moveProcess(tlv, fds, game);
+    if (rc < 0) {
+      ERROR_HANDLER("moveProcess(tlv, fds, game)", rc);
+      return -1;
     }
+
     break;
   }
 
   case TYPE_CONCEDE: {
-    ERROR_SHUTDOWN("SEND_MOVE(move, fds[i])",
-                   SEND_CONCEDE(fds[(color + 1) % 2]));
-    closeFds(fds);
+    rc = SEND_CONCEDE(fds[(game->player + 1) % 2]);
+    if (rc < 0) {
+      ERROR_HANDLER("SEND_CONCEDE(fds[(game->player + 1) % 2])", rc);
+      return -1;
+    }
+
+    rc = closeFds(fds, CONNEXIONS_LIMIT);
+    if (rc < 0) {
+      ERROR_HANDLER("closeFds(fds, CONNEXIONS_LIMIT)", rc);
+      return -1;
+    }
+
     break;
   }
 
   case TYPE_DISCON: {
-    ERROR_SHUTDOWN("SEND_MOVE(move, fds[i])",
-                   SEND_DISCON(fds[(color + 1) % 2]));
-    closeFds(fds);
+    rc = SEND_DISCON(fds[(game->player + 1) % 2]);
+    if (rc < 0) {
+      ERROR_HANDLER("SEND_DISCON(fds[(game->player + 1) % 2])", rc);
+      return -1;
+    }
+
+    rc = closeFds(fds, CONNEXIONS_LIMIT);
+    if (rc < 0) {
+      ERROR_HANDLER("closeFds(fds, CONNEXIONS_LIMIT)", rc);
+      return -1;
+    }
+
     break;
   }
 
-  default:
+  default: 
+    fprintf(stderr, "Unknown tlv\n");
     break;
   }
+
   destroy_tlv(tlv);
+  return rc;
+}
+
+int moveProcess(Generic_tlv_t *tlv, int *fds, Puissance4_t *game) {
+  int rc;
+
+  Move_t move = READ_MOVE(tlv->msg);
+
+  int state = gameTurn(game, move);
+
+  rc = moveProcessAux(move, state, fds, game);
+  if (rc < 0) {
+    ERROR_HANDLER("moveProcessAux(move, NOT_ACCEPTED, game->player, state, fds, game)", rc);
+    return -1;
+  }
+
+  return 0;
+}
+
+int moveProcessAux(Move_t move, int state, int *fds, Puissance4_t *game) {
+  int rc = 0;
+
+  uint8_t who_to_send = game->player;
+  Validity_t move_accepted = ACCEPTED;
+
+  if (state == RUNNING) {
+    uint8_t player = (game->player + 1) % 2;
+    who_to_send = player;
+  }
+  else {
+    move_accepted = NOT_ACCEPTED;
+  }
+
+  Moveack_t moveack;
+  moveack.Accepted = move_accepted;
+  moveack.Col = move;
+
+  Grid_t grid;
+  grid.Grid = game->grid;
+  grid.who = who_to_send;
+  grid.won_draw = state;
+
+  rc = SEND_MOVEACK(moveack, fds[who_to_send]);
+  if (rc < 0) {
+    ERROR_HANDLER("SEND_MOVEACK(moveack, fds[who_to_send])", rc);
+    return -1;
+  }
+
+  rc = SEND_GRID(grid, fds[who_to_send]);
+  if (rc < 0) {
+    ERROR_HANDLER("SEND_GRID(grid, fds[who_to_send])", rc);
+    return -1;
+  }
+
+  if (state == WIN || state == DRAW) {
+    rc = SEND_MOVEACK(moveack, fds[(who_to_send + 1) % 2]);
+    if (rc < 0) {
+      ERROR_HANDLER("SEND_MOVEACK(moveack, fds[(who_to_send + 1) % 2])", rc);
+      return -1;
+    }
+
+    rc = SEND_GRID(grid, fds[(who_to_send + 1) % 2]);
+    if (rc < 0) {
+      ERROR_HANDLER("SEND_GRID(grid, fds[(who_to_send + 1) % 2])", rc);
+      return -1;
+    }
+  }
 }

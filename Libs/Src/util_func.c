@@ -71,3 +71,23 @@ int retransmit(int fdin, int fdout) {
     }
   }
 }
+
+//! Bouger dans utils
+int closeFds(int *fds, int nb_con) {
+  int rc;
+  int failure = 0;
+
+  for (int i = 0; i < nb_con; i++) {
+    rc = close(fds[i]);
+    if (rc < 0) {
+      failure = 1;
+      ERROR_HANDLER("close(fd)", rc);
+    }
+  }
+
+  if (failure) {
+    return -1;
+  }
+
+  return 0;
+}
