@@ -3,7 +3,7 @@ extern "C" {
 #include "Libs/util_func.h"
 }
 #include "Libs/tlv.hpp"
-#include "Puiss4/game.hpp"
+#include "Puiss4/p4.hpp"
 #include <cstdlib>
 #include <iostream>
 using namespace std;
@@ -43,7 +43,7 @@ void process_tlv(Generic_tlv_t *in_process, int serv_fd) {
   case TYPE_GRID: {
     int error = 0;
     Grid_t Received = READ_GRID(in_process->msg);
-    cout << Puiss4::for_client(Received.Grid) << endl;
+    cout << gameShowToString(Received.Grid) << endl;
     switch (Received.won_draw) {
     case 0:
       if (Received.who == Color) {
@@ -86,11 +86,6 @@ int game(int serv_fd, const char *pseudo) {
   error = SEND_PSEUDO(strlen(pseudo), pseudo, serv_fd);
   if (error < 0)
     return error;
-
-  error = read_tlv(&in_process, serv_fd);
-  if (error < 0)
-    return error;
-
   while (1) {
     read_tlv(&in_process, serv_fd);
     cout << "Tlv Reçu " << endl;

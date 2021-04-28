@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string>
-#include <assert.h>
 #include "p4.hpp"
 
 void gameInit(Puissance4_t *game) {

@@ -8,8 +8,8 @@ EXE := server client
 
 all: $(EXE)
 
-client: Libs/Src/util_func.o Libs/Src/tcp.o Libs/Src/tlv.o Puiss4/game.o
-server: Libs/Src/util_func.o Libs/Src/tcp.o Libs/Src/tlv.o Libs/Src/server_func.o Puiss4/game.o
+client: Libs/Src/util_func.o Libs/Src/tcp.o Libs/Src/tlv.o Puiss4/p4.o
+server: Libs/Src/util_func.o Libs/Src/tcp.o Libs/Src/tlv.o Libs/Src/server_func.o Puiss4/p4.o
 
 server_func.o: Libs/server_func.h
 util_func.o: Libs/util_func.h

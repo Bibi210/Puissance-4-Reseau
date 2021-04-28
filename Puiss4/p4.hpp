@@ -3,6 +3,10 @@
 
 #include <bits/stdint-uintn.h>
 #include <array>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <assert.h>
 
 using namespace std;
 
@@ -35,6 +39,7 @@ void gameEngine();
 void gameInit(Puissance4_t *game);
 void gameShow(Puissance4_t *game);
 
+
 // Apply move
 int gameTurn(Puissance4_t *game, int col);
 
@@ -43,5 +48,7 @@ int gameTurn(Puissance4_t *game, int col);
 int testValidity(int col, Puissance4_t *game);
 int testWin(int move, Puissance4_t *game);
 int testDir(int move, int direction, Puissance4_t *game);
+string gameShowToString(array<uint8_t, (COL_MAX * LIN_MAX)> grid);
+
 
 #endif // _P4_HPP included

@@ -1,20 +1,21 @@
 #ifndef TLV_PROGET_H
 #define TLV_PROGET_H
 
-#include <array>
-#include <bits/stdint-uintn.h>
 extern "C" {
 #include "util_func.h"
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <bits/stdint-uintn.h>
 }
+
+#include <array>
 #include <iostream>
+#include "../Puiss4/p4.hpp"
+
 using namespace std;
 
-// TODO USE Structs in READ and SEND
-#include "../Puiss4/game.hpp"
 
 #define STATE_SIZE 2
 #define GRID_SIZE (6 * 7)

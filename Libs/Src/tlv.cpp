@@ -247,7 +247,7 @@ void display_TLV_msg(Generic_tlv_t to_see) {
     cout << "Won : " << +To_test.won_draw << endl;
     cout << "Who : " << +To_test.who << endl;
     cout << "Grid :" << endl;
-    cout << Puiss4::for_client(To_test.Grid) << endl;
+    cout << gameShowToString(To_test.Grid) << endl;
     break;
   }
   case TYPE_MOVEACK: {
@@ -255,13 +255,13 @@ void display_TLV_msg(Generic_tlv_t to_see) {
     cout << "TYPE_MOVEACK" << endl;
     cout << boolalpha;
     cout << "Accepted ? " << to_test.Accepted << endl;
-    cout << "Col : " << +to_test.Col << endl;
+    cout << "Col : " << to_test.Col << endl;
     break;
   }
   case TYPE_MOVE: {
     Move_t To_test = READ_MOVE(to_see.msg);
     cout << "TYPE_MOVE" << endl;
-    cout << "Col : " << +To_test << endl;
+    cout << "Col : " << To_test << endl;
     break;
   }
   case TYPE_PSEUDO: {

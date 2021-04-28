@@ -1,26 +1,13 @@
 #include "../server_func.hpp"
-#include "../../Puiss4/p4.hpp"
-#include "../tcp.h"
-#include "../tlv.hpp"
-#include "../util_func.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <wait.h>
-
 // A faire :
 // - Corriger potentiel bug
 
 int serverCore(int sockfd) {
-  int rc;
-
   int fds[CONNEXIONS_LIMIT];
 
   while (1) {
     for (size_t i = 0; i < CONNEXIONS_LIMIT; i++) {
-      struct sockaddr_in6 addr = {0};
+      struct sockaddr_in6 addr;
       socklen_t addrlen = sizeof(addr);
       fds[i] = accept(sockfd, (struct sockaddr *)&addr, &addrlen);
       ERROR_HANDLER("accept()", fds[i]);
@@ -34,8 +21,8 @@ int serverCore(int sockfd) {
     if (pid < 0) {
       ERROR_HANDLER("fork()", pid);
       ERROR_HANDLER("closeFds(fds)", closeFds(fds, CONNEXIONS_LIMIT));
-    }
-    else if (pid == 0) {
+      continue;
+    } else if (pid == 0) {
       ERROR_SHUTDOWN("childWork(fds)", childWork(fds)); // Manage connexions
 
       ERROR_SHUTDOWN("closeFds(fds)", closeFds(fds, CONNEXIONS_LIMIT));
@@ -46,10 +33,7 @@ int serverCore(int sockfd) {
     // Parent
     ERROR_HANDLER("closeFds(fds)", closeFds(fds, CONNEXIONS_LIMIT));
 
-    while (1) {
-      pid = waitpid(-1, NULL, WNOHANG);
-      ERROR_HANDLER("waitpid(-1, NULL, WNOHANG)", pid);
-    }
+    //! TODO Block Server wait whohang
   }
 
   return sockfd;
@@ -57,21 +41,20 @@ int serverCore(int sockfd) {
 
 int childWork(int *fds) {
   int rc;
-  size_t i;
 
   Pseudo_t pseudo[2];
   Start_t start[2];
 
-  Generic_tlv_t *tlv;
+  Generic_tlv_t tlv;
 
-  for (i = 0; i < CONNEXIONS_LIMIT; i++) {
-    rc = read_tlv(tlv, fds[i]); // Read tlv
+  for (size_t i = 0; i < CONNEXIONS_LIMIT; i++) {
+    rc = read_tlv(&tlv, fds[i]); // Read tlv
     if (rc < 0) {
       ERROR_HANDLER("read_tlv(tlv, fds[i])", rc);
       return -1;
     }
 
-    pseudo[i] = READ_PSEUDO(tlv->msg);
+    pseudo[i] = READ_PSEUDO(tlv.msg);
   }
 
   Puissance4_t game;
@@ -84,7 +67,7 @@ int childWork(int *fds) {
 
   int color = rand() % 2;
 
-  for (i = 0; i < CONNEXIONS_LIMIT; i++) {
+  for (size_t i = 0; i < CONNEXIONS_LIMIT; i++) {
     start[i].Client = pseudo[i];
     start[i].Opponent = pseudo[(i + 1) % 2];
     start[i].Pcolor = color;
@@ -105,14 +88,14 @@ int childWork(int *fds) {
   }
 
   while (1) {
-    rc = read_tlv(tlv, fds[game.player]);
+    rc = read_tlv(&tlv, fds[game.player]);
     if (rc < 0) {
       ERROR_HANDLER("read_tlv(tlv, fds[game.player])", rc);
       return -1;
     }
 
     // Decrypte tlv
-    rc = process_tlv(tlv, fds, &game);
+    rc = process_tlv(&tlv, fds, &game);
     if (rc < 0) {
       ERROR_HANDLER("process_tlv(tlv, fds, &game)", rc);
       return -1;
@@ -172,7 +155,7 @@ int process_tlv(Generic_tlv_t *tlv, int *fds, Puissance4_t *game) {
     break;
   }
 
-  default: 
+  default:
     fprintf(stderr, "Unknown tlv\n");
     break;
   }
@@ -190,7 +173,9 @@ int moveProcess(Generic_tlv_t *tlv, int *fds, Puissance4_t *game) {
 
   rc = moveProcessAux(move, state, fds, game);
   if (rc < 0) {
-    ERROR_HANDLER("moveProcessAux(move, NOT_ACCEPTED, game->player, state, fds, game)", rc);
+    ERROR_HANDLER(
+        "moveProcessAux(move, NOT_ACCEPTED, game->player, state, fds, game)",
+        rc);
     return -1;
   }
 
@@ -206,13 +191,12 @@ int moveProcessAux(Move_t move, int state, int *fds, Puissance4_t *game) {
   if (state == RUNNING) {
     uint8_t player = (game->player + 1) % 2;
     who_to_send = player;
-  }
-  else {
+  } else {
     move_accepted = NOT_ACCEPTED;
   }
 
   Moveack_t moveack;
-  moveack.Accepted = move_accepted;
+  moveack.Accepted = (bool)move_accepted;
   moveack.Col = move;
 
   Grid_t grid;
@@ -245,4 +229,5 @@ int moveProcessAux(Move_t move, int state, int *fds, Puissance4_t *game) {
       return -1;
     }
   }
+  return EXIT_SUCCESS;
 }
