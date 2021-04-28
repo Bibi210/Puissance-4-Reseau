@@ -43,7 +43,6 @@ void process_tlv(Generic_tlv_t *in_process, int serv_fd) {
   case TYPE_GRID: {
     int error = 0;
     Grid_t Received = READ_GRID(in_process->msg);
-    cout << gameShowToString(Received.Grid) << endl;
     switch (Received.won_draw) {
     case 0:
       if (Received.who == Color) {
@@ -87,8 +86,8 @@ int game(int serv_fd, const char *pseudo) {
   if (error < 0)
     return error;
   while (1) {
+    cout << "Wait to Receive TLV ..." << endl;
     read_tlv(&in_process, serv_fd);
-    cout << "Tlv Reçu " << endl;
     process_tlv(&in_process, serv_fd);
   }
   return EXIT_SUCCESS;
