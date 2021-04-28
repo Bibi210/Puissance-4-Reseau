@@ -14,6 +14,7 @@ extern "C" {
 using namespace std;
 
 // TODO USE Structs in READ and SEND
+#include "../Puiss4/game.hpp"
 
 #define STATE_SIZE 2
 #define GRID_SIZE (6 * 7)
@@ -39,11 +40,6 @@ enum TLV_len : uint8_t {
   LEN_CONCEDE = LEN_INFO_MSG,
   LEN_DISCON = LEN_INFO_MSG,
 };
-
-typedef enum Validity {
-  ACCEPTED,
-  NOT_ACCEPTED
-} Validity_t;
 
 typedef uint8_t *Body; //! Need Free
 

@@ -1,7 +1,7 @@
 extern "C"{
     #include "Libs/tcp.h"
-    #include "Libs/server_func.hpp"
 }
+#include "Libs/server_func.hpp"
 #include "Libs/tlv.hpp"
 #include <iostream>
 
