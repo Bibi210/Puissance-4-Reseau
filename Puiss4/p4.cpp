@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 #include <assert.h>
 #include "p4.hpp"
 
@@ -40,6 +41,38 @@ void gameShow(Puissance4_t *game) {
     }
     printf("+---+---+---+---+---+---+---+\n");
 }
+
+string gameShowToString(array<uint8_t, (COL_MAX * LIN_MAX)> grid) {
+    string output = string();
+
+    for (int lin = LIN_MAX - 1; lin != -1; lin--) {
+        output.append("+---+---+---+---+---+---+---+\n");
+        for (int col = 0; col != COL_MAX; col++) {
+            switch (grid[col * 6 + lin]) {
+            case ROUGE:
+                output.append("| X ");
+                break;
+
+            case JAUNE:
+                output.append("| O ");
+                break;
+
+            case FREE:
+                output.append("|   ");
+                break;
+
+            default:
+                output.append("| E ");
+                break;
+            }
+        }
+        output.append("|\n");
+    }
+    output.append("+---+---+---+---+---+---+---+\n");
+
+    return output;
+}
+
 
 int gameTurn(Puissance4_t *game, int col) {
     int move;
