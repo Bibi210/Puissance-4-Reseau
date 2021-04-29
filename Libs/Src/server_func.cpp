@@ -184,17 +184,13 @@ int moveProcess(Generic_tlv_t *tlv, int *fds, Puissance4_t *game) {
 
   Move_t move = READ_MOVE(tlv->msg);
 
-  cout << +move << endl;
+  int m = parseUint8ToInt(move);
 
-  int state = gameTurn(game, move);
+  int state = gameTurn(game, m);
 
   uint8_t who_to_send = game->player;
   Validity_t move_accepted = ACCEPTED;
 
-  if (state == RUNNING) {
-    uint8_t player = (game->player + 1) % 2;
-    who_to_send = player;
-  }
   if (state == -1) {
     move_accepted = NOT_ACCEPTED;
   }
@@ -220,7 +216,7 @@ int moveProcess(Generic_tlv_t *tlv, int *fds, Puissance4_t *game) {
     return -1;
   }
 
-  if (state == WIN || state == DRAW) {
+  if (state != -1) {
     rc = SEND_MOVEACK(moveack, fds[(who_to_send + 1) % 2]);
     if (rc < 0) {
       ERROR_HANDLER("SEND_MOVEACK(moveack, fds[(who_to_send + 1) % 2])", rc);
@@ -232,6 +228,10 @@ int moveProcess(Generic_tlv_t *tlv, int *fds, Puissance4_t *game) {
       ERROR_HANDLER("SEND_GRID(grid, fds[(who_to_send + 1) % 2])", rc);
       return -1;
     }
+  }
+
+  if (state == WIN || state == DRAW) {
+    return 1;
   }
 
   return 0;

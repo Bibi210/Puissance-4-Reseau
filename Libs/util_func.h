@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <unistd.h>
 
 int error_gestion(const char *msg, int to_test,const char *file,int line, int mode);
@@ -19,5 +20,6 @@ int write_all(int dst, void *buffer, size_t buffsize);
 int read_all(int src, void *buffer, size_t buffsize);
 int retransmit(int fdin, int fdout);
 int closeFds(int *fds, int nb_con);
+int parseUint8ToInt(uint8_t nb);
 
 #endif // !UTIL_FUNC_H

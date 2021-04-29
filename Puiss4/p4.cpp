@@ -78,7 +78,7 @@ int gameTurn(Puissance4_t *game, int col) {
     int move;
     int state;
 
-    if ((col >= 0 && col < COL_MAX) && (move = testValidity(col, game)) > 0)
+    if ((col >= 0 && col < COL_MAX) && (move = testValidity(col, game)) >= 0)
         game->grid[move] = game->player;
     else {
         return -1;
@@ -135,7 +135,7 @@ int testWin(int move, Puissance4_t *game) {
 }
 
 int testDir(int move, int direction, Puissance4_t *game) {
-    if (game->grid[move + direction] == game->player)
+    if (game->grid[move + direction] == game->player && (move >= 0 && move < 42))
         return testDir(move + direction, direction, game) + 1;
     return false;
 }

@@ -91,3 +91,10 @@ int closeFds(int *fds, int nb_con) {
 
   return 0;
 }
+
+//! prend que le premier chiffre de nb (ceci n'est pas un bug c'est une secret feature)
+int parseUint8ToInt(uint8_t nb) {
+  char parse[1] = {nb};
+
+  return atoi(parse);
+}
