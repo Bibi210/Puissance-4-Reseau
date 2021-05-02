@@ -4,18 +4,17 @@
 extern "C" {
 #include "util_func.h"
 #include <assert.h>
+#include <bits/stdint-uintn.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <bits/stdint-uintn.h>
 }
 
+#include "../Puiss4/p4.hpp"
 #include <array>
 #include <iostream>
-#include "../Puiss4/p4.hpp"
 
 using namespace std;
-
 
 #define STATE_SIZE 2
 #define GRID_SIZE (6 * 7)
@@ -85,6 +84,11 @@ int retransmit_tlv(int fdin, int fdout);
 
 /// Destroy TLV (free)
 void destroy_tlv(Generic_tlv_t *to_destroy);
+
+/// Mode Debug
+void active_mode_debug(bool on_off);
+
+bool get_debug_mode();
 
 //! Only for debug purposes
 void display_TLV_msg(Generic_tlv_t);

@@ -1,4 +1,9 @@
 #include "../tlv.hpp"
+bool debug_mode;
+
+void active_mode_debug(bool on_off) { debug_mode = on_off; }
+
+bool get_debug_mode() { return debug_mode; }
 
 int send_tlv(Generic_tlv_t *to_send, int fdout) {
   int error = 0;
@@ -10,8 +15,8 @@ int send_tlv(Generic_tlv_t *to_send, int fdout) {
   error = write_all(fdout, &to_send->length, sizeof(uint8_t));
   if (error < 0)
     return error;
-
-  display_TLV_msg(*to_send);
+  if (debug_mode)
+    display_TLV_msg(*to_send);
   if (to_send->length) {
     error = write_all(fdout, to_send->msg, to_send->length);
     if (error < 0)
@@ -25,6 +30,8 @@ int send_tlv(Generic_tlv_t *to_send, int fdout) {
 }
 
 int read_tlv(Generic_tlv_t *to_read_into, int fdin) {
+  if (debug_mode)
+    cout << "Wait to Receive TLV ..." << endl;
   int error = -1;
 
   error = read_all(fdin, &to_read_into->type, sizeof(uint8_t));
@@ -46,7 +53,8 @@ int read_tlv(Generic_tlv_t *to_read_into, int fdin) {
     if (error < 0)
       return error;
   }
-  display_TLV_msg(*to_read_into);
+  if (debug_mode)
+    display_TLV_msg(*to_read_into);
   return EXIT_SUCCESS;
 }
 
@@ -121,15 +129,15 @@ int SEND_START(uint8_t Pcolor, uint8_t Plen_A, const char *pseudo_A,
   return send_tlv(&to_send, fdout);
 }
 
-int SEND_GRID(Grid_t to_send, int fdout){
+int SEND_GRID(Grid_t to_send, int fdout) {
   uint8_t State[2];
   State[0] = to_send.won_draw;
   State[1] = to_send.who;
   uint8_t Grid[GRID_SIZE];
-  for(int i = 0; i < GRID_SIZE; i++){
+  for (int i = 0; i < GRID_SIZE; i++) {
     Grid[i] = to_send.Grid[i];
   }
-  return SEND_GRID(State,Grid,fdout);
+  return SEND_GRID(State, Grid, fdout);
 }
 
 int SEND_GRID(uint8_t *State, uint8_t *Grid, int fdout) {
@@ -155,9 +163,8 @@ int SEND_MOVE(uint8_t CDL, int fdout) {
   return send_tlv(&to_send, fdout);
 }
 
-
-int SEND_MOVEACK(Moveack_t to_send,int fdout) {
-  return SEND_MOVEACK(to_send.Col,to_send.Accepted,fdout);
+int SEND_MOVEACK(Moveack_t to_send, int fdout) {
+  return SEND_MOVEACK(to_send.Col, to_send.Accepted, fdout);
 }
 
 int SEND_MOVEACK(uint8_t CDL, uint8_t Ok, int fdout) {
@@ -217,7 +224,7 @@ Grid_t READ_GRID(Body To_read) {
 
 Move_t READ_MOVE(Body To_read) {
   Move_t output = To_read[0];
-  return output; 
+  return output;
 }
 
 Moveack_t READ_MOVEACK(Body To_read) {
@@ -264,7 +271,7 @@ void display_TLV_msg(Generic_tlv_t to_see) {
   case TYPE_MOVE: {
     Move_t To_test = READ_MOVE(to_see.msg);
     cout << "TYPE_MOVE" << endl;
-    cout << "Col : " << +To_test << endl;
+    cout << "Col : " << To_test << endl;
     break;
   }
   case TYPE_PSEUDO: {
