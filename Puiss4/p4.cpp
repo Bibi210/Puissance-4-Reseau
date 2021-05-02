@@ -126,7 +126,6 @@ int testWin(int move, Puissance4_t *game) {
 
             if (testDir(dir, test_move, move))
                 if (game->grid[test_move] == game->player) {
-                    printf("move : %d\n", move);
                     successives += testFollowing(move, dir, game) + 1;
                 }
             if (successives >= 4) {
@@ -146,8 +145,6 @@ int testWin(int move, Puissance4_t *game) {
 int testFollowing(int move, int direction, Puissance4_t *game) {
     int next_case = move + direction;
     
-    printf("test move : %d\n", next_case);
-
     if (testDir(direction, next_case, move))
         if (game->grid[move] == game->player && next_case >= 0 && next_case <= 42)
             return testFollowing(next_case, direction, game) + 1;

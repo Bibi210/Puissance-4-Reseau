@@ -88,6 +88,12 @@ void process_tlv(Generic_tlv_t *in_process, int serv_fd,
         error = make_move_send(serv_fd, game_state);
         ERROR_SHUTDOWN("SEND MOVE ", error);
         cout << "En attente de l'adversaire..." << endl;
+      } else {
+        if (!get_debug_mode()) {
+          std::system("clear"); /// Pour de la propreté pas signifiant
+        }
+        cout << "Actual Grid :" << endl;
+        cout << gameShowToString(game_state->grid) << endl;
       }
       break;
     case 1:
