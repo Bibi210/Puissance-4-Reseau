@@ -137,55 +137,46 @@ int childWork(int *fds) {
 
 int process_tlv(Generic_tlv_t *tlv, int *fds, Puissance4_t *game) {
   int rc;
+  int crc;
 
-  switch (tlv->type) {
-  case TYPE_MOVE: {
+  if (tlv->type == TYPE_MOVE) {
     rc = moveProcess(tlv, fds, game);
     if (rc < 0) {
       ERROR_HANDLER("moveProcess(tlv, fds, game)", rc);
-      return -1;
+    }
+  } else {
+    switch (tlv->type) {
+    case TYPE_CONCEDE: {
+      rc = SEND_CONCEDE(fds[(game->player + 1) % 2]);
+      if (rc < 0) {
+        ERROR_HANDLER("SEND_CONCEDE(fds[(game->player + 1) % 2])", rc);
+      }
+
+      break;
     }
 
-    break;
+    case TYPE_DISCON: {
+      rc = SEND_DISCON(fds[(game->player + 1) % 2]);
+      if (rc < 0) {
+        ERROR_HANDLER("SEND_DISCON(fds[(game->player + 1) % 2])", rc);
+      }
+
+      break;
+    }
+
+    default:
+      fprintf(stderr, "Unknown tlv\n");
+      break;
+    }
+
+    crc = closeFds(fds, CONNEXIONS_LIMIT);
+    if (crc < 0) {
+      ERROR_HANDLER("closeFds(fds, CONNEXIONS_LIMIT)", crc);
+    }
+
+    rc = (rc < 0 || crc < 0) ? -1 : 1;
   }
-
-  case TYPE_CONCEDE: {
-    rc = SEND_CONCEDE(fds[(game->player + 1) % 2]);
-    if (rc < 0) {
-      ERROR_HANDLER("SEND_CONCEDE(fds[(game->player + 1) % 2])", rc);
-      return -1;
-    }
-
-    rc = closeFds(fds, CONNEXIONS_LIMIT);
-    if (rc < 0) {
-      ERROR_HANDLER("closeFds(fds, CONNEXIONS_LIMIT)", rc);
-      return -1;
-    }
-
-    break;
-  }
-
-  case TYPE_DISCON: {
-    rc = SEND_DISCON(fds[(game->player + 1) % 2]);
-    if (rc < 0) {
-      ERROR_HANDLER("SEND_DISCON(fds[(game->player + 1) % 2])", rc);
-      return -1;
-    }
-
-    rc = closeFds(fds, CONNEXIONS_LIMIT);
-    if (rc < 0) {
-      ERROR_HANDLER("closeFds(fds, CONNEXIONS_LIMIT)", rc);
-      return -1;
-    }
-
-    break;
-  }
-
-  default:
-    fprintf(stderr, "Unknown tlv\n");
-    break;
-  }
-
+  
   destroy_tlv(tlv);
   return rc;
 }
@@ -239,6 +230,10 @@ int moveProcess(Generic_tlv_t *tlv, int *fds, Puissance4_t *game) {
       ERROR_HANDLER("SEND_GRID(grid, fds[(who_to_send + 1) % 2])", rc);
       return -1;
     }
+  }
+
+  if (state == WIN || state == DRAW) {
+    return 1;
   }
 
   return 0;

@@ -105,26 +105,29 @@ int testValidity(int col, Puissance4_t *game) {
 }
 
 int testWin(int move, Puissance4_t *game) {
-    int polarity[2] = {1, -1};
+    int polarity[POL] = {1, -1};
     int direction[NB_DIR] = {1, 6, 5, 7};
 
     int successives;
     int test_move;
     int dir;
 
-    printf("move : %d\n\n", move);
-
     for (size_t i = 0; i < NB_DIR; i++) {
-        for (size_t j = 0; j < 2; j++) {
+        for (size_t j = 0; j < POL; j++) {
             successives = 0;
+
             dir = direction[i] * polarity[j];
+            if (dir == 1)
+            {
+                continue;
+            }
+
             test_move = move + dir;
 
-            printf("test_move : %d\n", test_move);
-
-            if (game->grid[test_move] == game->player) {
-                successives += testDir(test_move, dir, game) + 1;
-            }
+            if (testDir(dir, test_move, move))
+                if (game->grid[test_move] == game->player) {
+                    successives += testFollowing(test_move, dir, game) + 1;
+                }
             if (successives >= 4) {
                 return WIN;
             }
@@ -132,16 +135,48 @@ int testWin(int move, Puissance4_t *game) {
     }
 
     // a verifier
-    if (game->turn == 42) {
+    if (game->turn == 41) {
         return DRAW;
     }
 
     return RUNNING;
 }
 
-int testDir(int move, int direction, Puissance4_t *game) {
-    printf("case test : %d\n", move + direction);
-    if (game->grid[move] == game->player && (move >= 0 && move < 42))
-        return testDir(move + direction, direction, game) + 1;
+int testFollowing(int move, int direction, Puissance4_t *game) {
+    int next_case = move + direction;
+    
+    if (testDir(direction, next_case, move))
+        if (game->grid[move] == game->player && next_case >= 0 && next_case <= 42)
+            return testFollowing(next_case, direction, game) + 1;
     return 0;
+}
+
+int testDir(int direction, int next_case, int move) {
+    switch (abs(direction))
+    {
+    case 1:
+        if (next_case / 6 != move / 6) {
+            return 0;
+        }
+        break;
+    case 6:
+        if (next_case % 6 != move % 6) {
+            return 0;
+        }
+        break;
+    case 5:
+        if (next_case / 6 == move / 6) {
+            return 0;
+        }
+        break;
+    case 7:
+        if (next_case / 6 != (move / 6) + 1) {
+            return 0;
+        }
+        break;
+    default:
+        return 0;
+    }
+
+    return 1;
 }
