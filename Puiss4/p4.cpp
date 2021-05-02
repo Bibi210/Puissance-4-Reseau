@@ -15,7 +15,7 @@ void gameInit(Puissance4_t *game) {
     game->player = ROUGE;
 }
 
-void gameShow(Puissance4_t *game) {
+void gameShow(Puissance4_t *game) { // debug
     for (int lin = LIN_MAX - 1; lin != -1; lin--) {
         printf("+---+---+---+---+---+---+---+\n");
         for (int col = 0; col != COL_MAX; col++) {
@@ -68,7 +68,7 @@ string gameShowToString(array<uint8_t, (COL_MAX * LIN_MAX)> grid) {
         }
         output.append("|\n");
     }
-    output.append("+---+---+---+---+---+---+---+\n");
+    output.append("+---+---+---+---+---+---+---+\n  0   1   2   3   4   5   6  \n");
 
     return output;
 }
@@ -112,14 +112,19 @@ int testWin(int move, Puissance4_t *game) {
     int test_move;
     int dir;
 
+    printf("move : %d\n\n", move);
+
     for (size_t i = 0; i < NB_DIR; i++) {
         for (size_t j = 0; j < 2; j++) {
             successives = 0;
             dir = direction[i] * polarity[j];
             test_move = move + dir;
 
-            if (game->grid[test_move] == game->player)
+            printf("test_move : %d\n", test_move);
+
+            if (game->grid[test_move] == game->player) {
                 successives += testDir(test_move, dir, game) + 1;
+            }
             if (successives >= 4) {
                 return WIN;
             }
@@ -135,7 +140,8 @@ int testWin(int move, Puissance4_t *game) {
 }
 
 int testDir(int move, int direction, Puissance4_t *game) {
-    if (game->grid[move + direction] == game->player && (move >= 0 && move < 42))
+    printf("case test : %d\n", move + direction);
+    if (game->grid[move] == game->player && (move >= 0 && move < 42))
         return testDir(move + direction, direction, game) + 1;
-    return false;
+    return 0;
 }

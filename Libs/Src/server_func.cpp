@@ -3,6 +3,7 @@
 // - Corriger potentiel bug
 
 int serverCore(int sockfd) {
+  int rc;
   int fds[CONNEXIONS_LIMIT];
 
   while (1) {
@@ -10,7 +11,10 @@ int serverCore(int sockfd) {
       struct sockaddr_in6 addr;
       socklen_t addrlen = sizeof(addr);
       fds[i] = accept(sockfd, (struct sockaddr *)&addr, &addrlen);
-      ERROR_HANDLER("accept()", fds[i]);
+      if (fds[i] <  0) {
+        ERROR_HANDLER("accept()", fds[i]);
+        i--;
+      }
 
       printf("Connection from %s\n", str_of_sockaddr((struct sockaddr *)&addr));
     }
@@ -33,7 +37,15 @@ int serverCore(int sockfd) {
     // Parent
     ERROR_HANDLER("closeFds(fds)", closeFds(fds, CONNEXIONS_LIMIT));
 
-    //! TODO Block Server wait whohang
+    //! TODO Block Server wait wnohang
+    while ((rc = waitpid(-1, NULL, WNOHANG)))
+    {
+      if (rc < 0)
+      {
+        ERROR_HANDLER("waitpid(-1, NULL, WNOHANG)", rc);
+        break;
+      }
+    }
   }
 
   return sockfd;
@@ -125,7 +137,6 @@ int childWork(int *fds) {
 
 int process_tlv(Generic_tlv_t *tlv, int *fds, Puissance4_t *game) {
   int rc;
-
 
   switch (tlv->type) {
   case TYPE_MOVE: {
@@ -228,10 +239,6 @@ int moveProcess(Generic_tlv_t *tlv, int *fds, Puissance4_t *game) {
       ERROR_HANDLER("SEND_GRID(grid, fds[(who_to_send + 1) % 2])", rc);
       return -1;
     }
-  }
-
-  if (state == WIN || state == DRAW) {
-    return 1;
   }
 
   return 0;
