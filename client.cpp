@@ -24,7 +24,7 @@ void end_game(uint8_t winner){
 }
 
 int make_move_send(int serv_fd, Puissance4_t *game_state) {
-
+  gameShowToString(game_state->grid);
   uint8_t Choice;
   cout << "Choisisez une colone :  (Q for concede)" << endl;
   do {
