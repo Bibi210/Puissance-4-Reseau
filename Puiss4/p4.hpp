@@ -14,6 +14,7 @@ using namespace std;
 #define LIN_MAX 6
 
 #define NB_DIR 4
+#define POL 2
 
 typedef enum Belonging_t : uint8_t { 
     ROUGE = 0,
@@ -45,7 +46,8 @@ int gameTurn(Puissance4_t *game, int col);
 // return -1 if not valid, otherwise return the move's cell
 int testValidity(int col, Puissance4_t *game);
 int testWin(int move, Puissance4_t *game);
-int testDir(int move, int direction, Puissance4_t *game);
+int testFollowing(int move, int direction, Puissance4_t *game);
+int testDir(int direction, int next_case, int move);
 string gameShowToString(array<uint8_t, (COL_MAX * LIN_MAX)> grid);
 
 
