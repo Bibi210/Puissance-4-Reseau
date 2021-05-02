@@ -8,6 +8,9 @@ extern "C" {
 #include <iostream>
 using namespace std;
 
+// TODO: - afficher dernier move
+// TODO: - leak de mémoire
+
 string Pseudo;
 string OPpseudo;
 uint8_t Color;
