@@ -8,22 +8,22 @@ extern "C" {
 #include <iostream>
 using namespace std;
 
-// TODO: - afficher dernier move
-// TODO: - leak de mémoire
-
 string Pseudo;
 string OPpseudo;
 uint8_t Color;
 
-void end_game(uint8_t winner) {
+void end_game(uint8_t winner, bool is_abandon) {
   cout << "Fin du Jeu." << endl;
   cout << "Le gagnant est ";
   if (winner == Color) {
     cout << Pseudo << endl;
   } else {
-    cout << OPpseudo << endl;
+    cout << OPpseudo;
   }
-  exit(EXIT_SUCCESS);
+  if (is_abandon) {
+    cout << " par abandon";
+  }
+  cout << endl;
 }
 
 int make_move_send(int serv_fd, Puissance4_t *game_state) {
@@ -45,7 +45,7 @@ int make_move_send(int serv_fd, Puissance4_t *game_state) {
     cin >> Choice;
     if (Choice == 'Q') {
       SEND_CONCEDE(serv_fd);
-      end_game(99); // Chiffre Random Pour dire que l'autre a gagner
+      end_game(99, true); // Chiffre Random Pour dire que l'autre a gagner
     }
 
   } while (testValidity(parseUint8ToInt(Choice), game_state) == -1);
@@ -53,12 +53,13 @@ int make_move_send(int serv_fd, Puissance4_t *game_state) {
   cout << endl;
   cout << "Coup accepter" << endl;
   cout << "Le coup : " << Choice << " a été envoyé au serveur." << endl;
-    cout << "Fin du Tour" << endl << endl;
+  cout << "Fin du Tour" << endl << endl;
   return SEND_MOVE(Choice, serv_fd);
 }
 
 void process_tlv(Generic_tlv_t *in_process, int serv_fd,
                  Puissance4_t *game_state) {
+  bool game_done = false; // free the tlv before shutdown
   switch (in_process->type) {
   case TYPE_START: {
     Start_t Received = READ_START(in_process->msg);
@@ -86,11 +87,13 @@ void process_tlv(Generic_tlv_t *in_process, int serv_fd,
       if (Received.who == Color) {
         error = make_move_send(serv_fd, game_state);
         ERROR_SHUTDOWN("SEND MOVE ", error);
-        cout << "En attente du Serveur..." << endl;
+        cout << "En attente de l'adversaire..." << endl;
       }
       break;
     case 1:
-      end_game(Received.who);
+      cout << gameShowToString(game_state->grid) << endl;
+      end_game(Received.who, false);
+      game_done = true;
       break;
     case 2:
       cout << "Draw " << endl;
@@ -102,13 +105,12 @@ void process_tlv(Generic_tlv_t *in_process, int serv_fd,
   } break;
 
   case TYPE_CONCEDE: {
-    cout << "You Won!" << endl;
-    exit(EXIT_SUCCESS);
+    end_game(Color, true);
+    game_done = true;
   } break;
 
   case TYPE_DISCON: {
     cout << "Op Disconnect" << endl;
-    exit(EXIT_SUCCESS);
   } break;
 
   default:
@@ -116,6 +118,8 @@ void process_tlv(Generic_tlv_t *in_process, int serv_fd,
     break;
   }
   destroy_tlv(in_process);
+  if (game_done)
+    exit(EXIT_SUCCESS);
 }
 
 int game(int serv_fd, const char *pseudo) {
