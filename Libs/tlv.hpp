@@ -4,7 +4,7 @@
 extern "C" {
 #include "util_func.h"
 #include <assert.h>
-#include <bits/stdint-uintn.h>
+#include <stdint.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -38,7 +38,7 @@ enum TLV_len : uint8_t {
   LEN_MOVEACK = 2,
 
   LEN_CONCEDE = LEN_INFO_MSG,
-  LEN_DISCON = LEN_INFO_MSG,
+  LEN_DISCON = LEN_INFO_MSG
 };
 
 typedef uint8_t *Body; //! Need Free

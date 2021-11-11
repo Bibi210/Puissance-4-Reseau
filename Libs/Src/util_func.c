@@ -40,7 +40,8 @@ int read_all(int src, void *buffer, size_t size) {
   return readed;
 }
 
-int error_gestion(const char *msg, int to_test,const char *file, int line, int mode) {
+int error_gestion(const char *msg, int to_test, const char *file, int line,
+                  int mode) {
   int output = 0;
   if (to_test < 0) {
     fprintf(stderr, "%s error %s L:%d ", msg, file, line);
@@ -92,7 +93,8 @@ int closeFds(int *fds, int nb_con) {
   return 0;
 }
 
-//! prend que le premier chiffre de nb (ceci n'est pas un bug c'est une secret feature)
+//! prend que le premier chiffre de nb (ceci n'est pas un bug c'est une secret
+//! feature)
 int parseUint8ToInt(uint8_t nb) {
   char parse[1] = {nb};
 

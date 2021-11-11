@@ -167,8 +167,7 @@ int main(int argc, const char **argv) {
   }
   active_mode_debug(debug_on);
   // Permet Lors de la fin du program de SEND_DISCON si possible
-  on_exit(client_shutdown, &serv_fd);
-
+  //! on_exit(client_shutdown, &serv_fd);
   int error = 0;
   error = game(serv_fd, pseudo);
   ERROR_SHUTDOWN("Game process", error);

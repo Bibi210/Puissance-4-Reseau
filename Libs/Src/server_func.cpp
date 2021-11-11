@@ -11,7 +11,7 @@ int serverCore(int sockfd) {
       struct sockaddr_in6 addr;
       socklen_t addrlen = sizeof(addr);
       fds[i] = accept(sockfd, (struct sockaddr *)&addr, &addrlen);
-      if (fds[i] <  0) {
+      if (fds[i] < 0) {
         ERROR_HANDLER("accept()", fds[i]);
         i--;
       }
@@ -38,10 +38,8 @@ int serverCore(int sockfd) {
     ERROR_HANDLER("closeFds(fds)", closeFds(fds, CONNEXIONS_LIMIT));
 
     //! TODO Block Server wait wnohang
-    while ((rc = waitpid(-1, NULL, WNOHANG)))
-    {
-      if (rc < 0)
-      {
+    while ((rc = waitpid(-1, NULL, WNOHANG))) {
+      if (rc < 0) {
         ERROR_HANDLER("waitpid(-1, NULL, WNOHANG)", rc);
         break;
       }
@@ -119,7 +117,7 @@ int childWork(int *fds) {
       ERROR_HANDLER("read_tlv(tlv, fds[game.player])", rc);
       return -1;
     }
-    
+
     // Decrypte tlv
     rc = process_tlv(&tlv, fds, &game);
     if (rc < 0) {
@@ -136,8 +134,8 @@ int childWork(int *fds) {
 }
 
 int process_tlv(Generic_tlv_t *tlv, int *fds, Puissance4_t *game) {
-  int rc;
-  int crc;
+  int rc = 0;
+  int crc = 0;
 
   if (tlv->type == TYPE_MOVE) {
     rc = moveProcess(tlv, fds, game);
@@ -176,7 +174,7 @@ int process_tlv(Generic_tlv_t *tlv, int *fds, Puissance4_t *game) {
 
     rc = (rc < 0 || crc < 0) ? -1 : 1;
   }
-  
+
   destroy_tlv(tlv);
   return rc;
 }
