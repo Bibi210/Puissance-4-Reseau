@@ -1,10 +1,6 @@
 #include "aes.hpp"
-#include <array>
-#include <bitset>
-#include <climits>
-#include <cstdlib>
+#include <_types/_uint8_t.h>
 #include <random>
-#include <ratio>
 
 //* Block to Cipher = 128 bits = 16 octets = 16 * sizeof(uint8_t)
 // State = 4*4*uint8_t; key = 4*4*uint8_t
@@ -20,48 +16,51 @@ pair<bitset<4>, bitset<4>> Aes::break_uint8(uint8_t to_break) {
 
 int index(int x, int y, int line_size) { return x + (y * line_size); }
 
-template <typename T>
-array<array<uint8_t, 4 * 4>, (sizeof(T) / 16) + 1> break_inblock(T tobreak) {
-  array<array<uint8_t, 4 * 4>, (sizeof(T) / 16) + 1> output;
-  for (size_t j = 0; j < output.size(); j++)
-    output[j].fill(0);
-
-  size_t i = 0, j = 0;
-  uint8_t *bytes = (uint8_t *)&tobreak;
-  for (size_t i = 0; i < sizeof(T); i++) {
-    output[j][i % 16] = bytes[i];
-    if (i % 16 == 0 && i)
-      j++;
-  }
-  return output;
-}
-
-template <typename T>
-T rebuild_from_block(
-    array<array<uint8_t, 4 * 4>, (sizeof(T) / 16) + 1> tobuild) {
-  int i = 0;
-  uint8_t bytes[sizeof(T)];
-  for (array<uint8_t, 16> block : tobuild) {
-    for (uint8_t byte : block) {
-      if (i < sizeof(T)) {
-        bytes[i] = byte;
-        i++;
-      }
+template <typename T> T Aes::fromblock(vector<block_t> blocks) {
+  // TODO if used in future project verify if data is a pointer
+  size_t i = 0;
+  uint8_t *bytes = (uint8_t *)malloc(sizeof(uint8_t) * (blocks.size() * 16));
+  for (block_t block : blocks) {
+    for (uint8_t current_byte : block) {
+      bytes[i] = current_byte;
+      i++;
     }
   }
-  return *(T *)bytes;
+  if (typeid(char *) == typeid(T))
+    return reinterpret_cast<T>(bytes);
+  T out = *reinterpret_cast<T *>(bytes);
+  free(bytes);
+  return out;
 }
-
+template <typename T>
+vector<Aes::block_t> Aes::inblock(T to_break, size_t inlen) {
+  const uint8_t *in = reinterpret_cast<const uint8_t *>(to_break);
+  vector<block_t> out;
+  random_device os_seed;
+  block_t current_block = {
+      (uint8_t)(os_seed() % 256)}; // Padding with random data
+  size_t i = 0;
+  for (; i < inlen; i++) {
+    if (i % 16 == 0 && i) {
+      out.push_back(current_block);
+      current_block = {(uint8_t)(os_seed() % 256)};
+    }
+    current_block[i % 16] = in[i];
+  }
+  if (i % 16 != 0)
+    out.push_back(current_block);
+  return out;
+}
 //! Might be my Aes Weakness (Side Channel atk ?)
 uint8_t Aes::galoimul(uint8_t a, uint8_t b) {
   uint8_t output = 0;
   while (b && a) {          // a != 0 and b != 0
     if (b & 1)              // Si premier bit == 1
       output ^= a;          // Galoi +
-    if (a & (256 >> 1)) {   // Si prochain depasse size of uint8_t
+    if (a & (256 >> 1))     // Si prochain depasse size of uint8_t
       a = (a << 1) ^ 0x11b; // On diminue avec 0x11b (Me souvient plus Pk ?
                             // 0x11n exactement)
-    } else
+    else
       a <<= 1;
     b >>= 1; // B tant vers 0
   }
@@ -74,9 +73,9 @@ void Aes::initialize_multiplytables() { //! Not used slow wrong implementati
   int table;
   for (int t = 0; t < multiplications.size(); t++) {
     table = multiplications[t];
-    for (size_t i = 0; i < In_Calcul.size(); i++) {
+    for (size_t i = 0; i < In_Calcul.size(); i++)
       In_Calcul[i] = galoimul(i, table);
-    }
+
     precalculated_multiples[table] = In_Calcul;
   }
 }
@@ -92,29 +91,27 @@ void Aes::initialize_round_const() {
   round_const[0] = 1;
   for (size_t i = 1; i < round_const.size(); i++) {
     round_const[i] = round_const[i - 1] << 1;
-    if (round_const[i - 1] >= 0x80) {
+    if (round_const[i - 1] >= 0x80)
       round_const[i] ^= 0x11B;
-    }
   }
 }
-array<uint8_t, 4 * 4> Aes::gen_key() {
-  array<uint8_t, 4 * 4> output;
+Aes::key_t Aes::gen_key() {
+  key_t key_out;
   random_device os_seed;
-
   // TODO Read More Info About this
   // Safe on linuxOS based and windowsOS but not others
-  for (uint8_t *iter_out = output.begin(); iter_out != output.end();
-       iter_out++) {
+  for (uint8_t *iter_out = key_out.begin(); iter_out != key_out.end();
+       iter_out++)
     *iter_out = os_seed() % 256;
-  }
-  return output;
+
+  return key_out;
 }
 
-void Aes::DisplayState(const array<uint8_t, 4 * 4> &state) {
+void Aes::DisplayState(const block_t &state) {
   for (size_t i = 0; i < 16; i++) {
-    if (i % 4 == 0) {
+    if (i % 4 == 0)
       cout << endl;
-    }
+
     cout << hex << break_uint8(state[i]).first.to_ulong()
          << break_uint8(state[i]).second.to_ulong() << " ";
   }
@@ -124,9 +121,9 @@ void Aes::DisplayState(const array<uint8_t, 4 * 4> &state) {
 void Aes::DisplayBoxs() {
   cout << "Sbox :";
   for (size_t i = 0; i < 256; i++) {
-    if (i % 16 == 0) {
+    if (i % 16 == 0)
       cout << endl;
-    }
+
     cout << hex << break_uint8(sbox[i]).first.to_ulong()
          << break_uint8(sbox[i]).second.to_ulong() << " ";
   }
@@ -134,9 +131,9 @@ void Aes::DisplayBoxs() {
 
   cout << "Un_Sbox :";
   for (size_t i = 0; i < 256; i++) {
-    if (i % 16 == 0) {
+    if (i % 16 == 0)
       cout << endl;
-    }
+
     cout << hex << break_uint8(un_sbox[i]).first.to_ulong()
          << break_uint8(un_sbox[i]).second.to_ulong() << " ";
   }
@@ -169,33 +166,30 @@ void Aes::initialize_aes_sbox() {
   } while (p != 1);
 }
 
-void Aes::ShiftRow(array<uint8_t, 4 * 4> &word, int line, int nbshift) {
+void Aes::ShiftRow(block_t &word, int line, int nbshift) {
   int start_index = index(0, line, 4);
   int end_indice = index(4, line, 4);
   uint8_t start;
   while (nbshift % 4) {
     start = word[start_index];
     for (size_t i = start_index; i < end_indice; i++) {
-      if (i + 1 == end_indice) {
+      if (i + 1 == end_indice)
         word[i] = start;
-      } else {
+      else
         word[i] = word[i + 1];
-      }
     }
     nbshift--;
   }
 }
 
-void Aes::ShiftRows(array<uint8_t, 4 * 4> &block) {
-  for (size_t i = 0; i < 4 /* Line */; i++) {
+void Aes::ShiftRows(block_t &block) {
+  for (size_t i = 0; i < 4 /* Line */; i++)
     ShiftRow(block, i, i);
-  }
 }
 
-void Aes::UnShiftRows(array<uint8_t, 4 * 4> &block) {
-  for (size_t i = 0; i < 4 /* Line */; i++) {
+void Aes::UnShiftRows(block_t &block) {
+  for (size_t i = 0; i < 4 /* Line */; i++)
     ShiftRow(block, i, 4 - i);
-  }
 }
 
 void Aes::SubCase(uint8_t *Case) {
@@ -203,10 +197,9 @@ void Aes::SubCase(uint8_t *Case) {
   *Case = sbox[coords.second.to_ulong() + (coords.first.to_ulong() * 16)];
 }
 
-void Aes::SubBlock(array<uint8_t, 4 * 4> &block) {
-  for (size_t i = 0; i < block.size(); i++) {
+void Aes::SubBlock(block_t &block) {
+  for (size_t i = 0; i < block.size(); i++)
     SubCase(&block[i]);
-  }
 }
 
 void Aes::UnSubCase(uint8_t *Case) {
@@ -214,123 +207,105 @@ void Aes::UnSubCase(uint8_t *Case) {
   *Case = un_sbox[coords.second.to_ulong() + (coords.first.to_ulong() * 16)];
 }
 
-void Aes::UnSubBlock(array<uint8_t, 4 * 4> &block) {
-  for (size_t i = 0; i < block.size(); i++) {
+void Aes::UnSubBlock(block_t &block) {
+  for (size_t i = 0; i < block.size(); i++)
     UnSubCase(&block[i]);
-  }
 }
 
-void Aes::MixColumn(array<uint8_t, 4 * 4> &block, int nb_columns) {
+void Aes::MixColumn(block_t &block, int nb_columns) {
   uint8_t tmp;
-  array<uint8_t, 4 * 4> output = block;
+  block_t output = block;
   for (size_t i = 0; i < 4; i++) {
     tmp = 0;
-    for (size_t j = 0; j < 4; j++) {
+    for (size_t j = 0; j < 4; j++)
       tmp ^=
           galoimul(block[index(nb_columns, j, 4)], MixMatrix[index(j, i, 4)]);
-    }
+
     output[index(nb_columns, i, 4)] = tmp;
   }
   block = output;
 }
-void Aes::MixColumns(array<uint8_t, 4 * 4> &block) {
-  for (size_t i = 0; i < 4; i++) {
+void Aes::MixColumns(block_t &block) {
+  for (size_t i = 0; i < 4; i++)
     MixColumn(block, i);
-  }
 }
 
-void Aes::UnMixColumn(array<uint8_t, 4 * 4> &block, int nb_columns) {
+void Aes::UnMixColumn(block_t &block, int nb_columns) {
   uint8_t tmp;
-  array<uint8_t, 4 * 4> output = block;
+  block_t output = block;
   for (size_t i = 0; i < 4; i++) {
     block[index(nb_columns, i, 4)];
     tmp = 0;
-    for (size_t j = 0; j < 4; j++) {
+    for (size_t j = 0; j < 4; j++)
       tmp ^= (galoimul(block[index(nb_columns, j, 4)],
                        Un_MixMatrix[index(j, i, 4)]));
-    }
+
     output[index(nb_columns, i, 4)] = tmp;
   }
   block = output;
 }
-void Aes::UnMixColumns(array<uint8_t, 4 * 4> &block) {
-  for (size_t i = 0; i < 4; i++) {
+void Aes::UnMixColumns(block_t &block) {
+  for (size_t i = 0; i < 4; i++)
     UnMixColumn(block, i);
-  }
 }
 
-void Aes::AddRoundKey(array<uint8_t, 4 * 4> &block,
-                      const array<uint8_t, 4 * 4> &roundkey) {
-  for (size_t i = 0; i < block.size(); i++) {
+void Aes::AddRoundKey(block_t &block, const key_t &roundkey) {
+  for (size_t i = 0; i < block.size(); i++)
     block[i] ^= roundkey[i];
-  }
 }
-array<array<uint8_t, 4 * 4>, 11>
-Aes::ExpendKey(const array<uint8_t, 4 * 4> &key) {
-  array<array<uint8_t, 4 * 4>, 11> roundkeys;
+array<Aes::key_t, 11> Aes::ExpendKey(const array<uint8_t, 4 * 4> &key) {
+  array<key_t, 11> roundkeys;
   roundkeys[0] = key;
-  array<uint8_t, 4 * 4> currentround;
+  key_t current_rkey;
 
   for (size_t i = 1; i < 11; i++) {
-    currentround = roundkeys[i - 1];
-    RotWord(currentround, 3);
-    SubWord(currentround, 3);
-    XorRecon(currentround, 3, currentround, 3, i);
+    current_rkey = roundkeys[i - 1];
+    RotWord(current_rkey, 3);
+    SubWord(current_rkey, 3);
+    XorRecon(current_rkey, 3, current_rkey, 3, i);
 
-    XorWord(currentround, 0, currentround, 0, currentround, 3);
-    XorWord(currentround, 1, currentround, 1, currentround, 0);
-    XorWord(currentround, 2, currentround, 2, currentround, 1);
-    XorWord(currentround, 3, roundkeys[i - 1], 3, currentround, 2);
-    roundkeys[i] = currentround;
+    XorWord(current_rkey, 0, current_rkey, 0, current_rkey, 3);
+    XorWord(current_rkey, 1, current_rkey, 1, current_rkey, 0);
+    XorWord(current_rkey, 2, current_rkey, 2, current_rkey, 1);
+    XorWord(current_rkey, 3, roundkeys[i - 1], 3, current_rkey, 2);
+    roundkeys[i] = current_rkey;
   }
 
   return roundkeys;
 }
 
-void Aes::RotWord(array<uint8_t, 4 * 4> &block, int word_number) {
+void Aes::RotWord(key_t &key, int word_number) {
   int start_index = index(word_number, 0, 4);
   int end_indice = index(word_number, 3, 4);
   uint8_t start;
-  start = block[start_index];
+  start = key[start_index];
 
   for (size_t i = 0; i < 4; i++) {
-    if (i + 1 == 4) {
-      block[index(word_number, i, 4)] = start;
-    } else {
-      block[index(word_number, i, 4)] = block[index(word_number, i + 1, 4)];
-    }
+    if (i + 1 == 4)
+      key[index(word_number, i, 4)] = start;
+    else
+      key[index(word_number, i, 4)] = key[index(word_number, i + 1, 4)];
   }
 }
-void Aes::SubWord(array<uint8_t, 4 * 4> &block, int word_number) {
-  for (size_t i = 0; i < 4; i++) {
-    SubCase(&block[index(word_number, i, 4)]);
-  }
-}
-void Aes::CpyWord(array<uint8_t, 4 * 4> &Src_word,
-                  array<uint8_t, 4 * 4> &Dst_word, int where_src,
-                  int where_dst) {
-  for (size_t i = 0; i < 4; i++) {
-    Dst_word[index(where_dst, i, 4)] = Src_word[index(where_src, i, 4)];
-  }
+void Aes::SubWord(key_t &key, int word_number) {
+  for (size_t i = 0; i < 4; i++)
+    SubCase(&key[index(word_number, i, 4)]);
 }
 
-void Aes::XorRecon(array<uint8_t, 4 * 4> &dst_block, int dst_word,
-                   array<uint8_t, 4 * 4> &block, int nb_word, int turn) {
-  dst_block[index(dst_word, 0, 4)] =
-      block[index(nb_word, 0, 4)] ^ round_const[turn - 1];
+void Aes::XorRecon(key_t &dst_key, int dst_word, key_t &src_key, int src_word,
+                   int rc_turn) {
+  dst_key[index(dst_word, 0, 4)] =
+      src_key[index(src_word, 0, 4)] ^ round_const[rc_turn - 1];
 }
 
-void Aes::XorWord(array<uint8_t, 4 * 4> &dst_block, int dst_word,
-                  array<uint8_t, 4 * 4> &block_A, int nb_word_A,
-                  array<uint8_t, 4 * 4> &block_B, int nb_word_B) {
-  for (size_t i = 0; i < 4; i++) {
-    dst_block[index(dst_word, i, 4)] =
-        block_A[index(nb_word_A, i, 4)] xor block_B[index(nb_word_B, i, 4)];
-  }
+void Aes::XorWord(key_t &dst_key, int dst_word, key_t &key_A, int nb_word_A,
+                  key_t &key_B, int nb_word_B) {
+  for (size_t i = 0; i < 4; i++)
+    dst_key[index(dst_word, i, 4)] =
+        key_A[index(nb_word_A, i, 4)] xor key_B[index(nb_word_B, i, 4)];
 }
 
-void Aes::block_encrypt(array<uint8_t, 4 * 4> &block,
-                        const array<array<uint8_t, 4 * 4>, 11> &expended_key) {
+void Aes::block_encrypt(block_t &block, const array<key_t, 11> &expended_key) {
   AddRoundKey(block, expended_key[0]);
   for (size_t i = 1; i < 11; i++) {
     SubBlock(block);
@@ -341,9 +316,7 @@ void Aes::block_encrypt(array<uint8_t, 4 * 4> &block,
   }
 }
 
-void Aes::block_decrypt(array<uint8_t, 4 * 4> &block,
-                        const array<array<uint8_t, 4 * 4>, 11> &expended_key) {
-
+void Aes::block_decrypt(block_t &block, const array<key_t, 11> &expended_key) {
   for (size_t i = 10; i >= 1; i--) {
     AddRoundKey(block, expended_key[i]);
     if (i != 10)
@@ -353,11 +326,75 @@ void Aes::block_decrypt(array<uint8_t, 4 * 4> &block,
   }
   AddRoundKey(block, expended_key[0]);
 }
-Aes::~Aes() {}
+void Aes::Encrypt_ECB(vector<Aes::block_t> &blocks, const key_t &key) {
+  const array<key_t, 11> keys = ExpendKey(key);
+  for (size_t i = 0; i < blocks.size(); i++) {
+    block_encrypt(blocks[i], keys);
+  }
+}
 
-struct B {
-  const char *key;
-};
+void Aes::Decrypt_ECB(vector<Aes::block_t> &blocks, const key_t &key) {
+  const array<key_t, 11> keys = ExpendKey(key);
+  for (size_t i = 0; i < blocks.size(); i++) {
+    block_decrypt(blocks[i], keys);
+  }
+}
+
+void Aes::Encrypt_CBC(vector<Aes::block_t> &blocks, const key_t &key) {
+  const array<key_t, 11> keys = ExpendKey(key);
+  block_t iv = gen_key();
+  blocks.insert(blocks.begin(), iv);
+  for (size_t i = 1; i < blocks.size(); i++) {
+    for (size_t j = 0; j < iv.size(); j++) {
+      blocks[i][j] ^= iv[j];
+    }
+    block_encrypt(blocks[i], keys);
+    iv = blocks[i];
+  }
+}
+
+void Aes::Decrypt_CBC(vector<Aes::block_t> &blocks, const key_t &key) {
+  const array<key_t, 11> keys = ExpendKey(key);
+
+  block_t iv = blocks[0];
+  block_t prev;
+  for (size_t i = 1; i < blocks.size(); i++) {
+    prev = blocks[i];
+    block_decrypt(blocks[i], keys);
+    for (size_t j = 0; j < iv.size(); j++) {
+      blocks[i][j] ^= iv[j];
+    }
+    iv = prev;
+  }
+  blocks.erase(blocks.begin());
+}
+template <typename T>
+vector<Aes::block_t> Aes::Encrypt(T to_encrypt, const key_t &key, size_t size) {
+  vector<block_t> blocks = inblock(to_encrypt, size);
+  switch (Mode_Enc) {
+  case ECB:
+    Encrypt_ECB(blocks, key);
+    break;
+  case CBC:
+    Encrypt_CBC(blocks, key);
+    break;
+  }
+  return blocks;
+}
+
+template <typename T>
+T Aes::Decrypt(vector<Aes::block_t> to_decrypt, const key_t &key, size_t size) {
+  switch (Mode_Enc) {
+  case ECB:
+    Decrypt_ECB(to_decrypt, key);
+    break;
+  case CBC:
+    Decrypt_CBC(to_decrypt, key);
+    break;
+  }
+  return fromblock<T>(to_decrypt);
+}
+Aes::~Aes() {}
 
 int main(int argc, const char **argv) {
   // TODO : Encrypt blocks 2 modes
@@ -367,11 +404,28 @@ int main(int argc, const char **argv) {
   // TODO Cleanup code
 
   Aes Crypt = Aes();
-  B t;
-  t.key = string("Boom").data();
-  auto blocks = break_inblock(t);
+  Aes::key_t key = Crypt.gen_key();
+  Crypt.Mode_Enc = Aes::ECB;
 
-  B output = rebuild_from_block<B>(blocks);
-  cout << output.key << endl;
+  string boom = "Je Suis un fan absolu de doctor who";
+  long long crash = 6942;
+
+  cout << "Clear : " << boom << endl;
+  auto blocks = Crypt.Encrypt(boom.c_str(), key, boom.length());
+  cout << "Cypher : " << Crypt.fromblock<char *>(blocks) << endl;
+  char *out = Crypt.Decrypt<char *>(blocks, key);
+  cout << "Decrypt : " << out << endl;
+  free(out);
+
+  cout << endl;
+
+  cout << "Clear : " << crash << endl;
+  blocks = Crypt.Encrypt(&crash, key);
+  auto Cypher = Crypt.fromblock<long long>(blocks);
+  cout << "Cypher : " << Cypher << endl;
+
+  long long dec = Crypt.Decrypt<long long>(blocks, key);
+  cout << "Decrypt : " << dec << endl;
+
   return 0;
 }
